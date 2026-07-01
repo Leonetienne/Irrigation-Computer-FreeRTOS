@@ -14,10 +14,13 @@ add_executable(irrigation_computer_tests
         GpioPinRegister.cpp
         GpioStub.cpp
         GpioDigitalWritePin.cpp
+        Valve.cpp
 
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/GpioPinRegister.cpp
         ../main/src/test/stubs/GpioStub.cpp
+        ../main/src/Valve.cpp
+        ../main/include/Valve.h
 )
 
 
