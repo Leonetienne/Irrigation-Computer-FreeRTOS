@@ -16,8 +16,13 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
         REQUIRE_FALSE(valve.getIsOpen());
     }
 
+    SECTION("not initialized by default") {
+        REQUIRE_FALSE(valve.isReady());
+    }
+
     SECTION("can initialize") {
         REQUIRE(valve.initialize());
+        REQUIRE(valve.isReady());
     }
 
     SECTION("can't initialize twice") {
@@ -116,6 +121,74 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
         REQUIRE(valve.setOpenState(false));
         REQUIRE_FALSE(valve.getIsOpen());
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("free succeeds after init") {
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.free());
+    }
+
+    SECTION("free fails before init") {
+        REQUIRE_FALSE(valve.free());
+    }
+
+    SECTION("free clears ready state") {
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.free());
+        REQUIRE_FALSE(valve.isReady());
+    }
+
+    SECTION("free unregisters the pin") {
+        REQUIRE(valve.initialize());
+        REQUIRE(pr.isPinBound(GPIO_NUM_19));
+        REQUIRE(valve.free());
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_19));
+    }
+
+    SECTION("free();free() fails, can't free twice") {
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.free());
+        REQUIRE_FALSE(valve.free());
+    }
+
+    SECTION("open fails after free") {
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.free());
+        REQUIRE_FALSE(valve.open());
+    }
+
+    SECTION("close fails after free") {
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.free());
+        REQUIRE_FALSE(valve.close());
+    }
+
+    SECTION("setOpenState fails after free") {
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.free());
+        REQUIRE_FALSE(valve.setOpenState(true));
+    }
+
+    SECTION("dtor calls free only when free was not called before") {
+        // free() called explicitly, dtor must not double-free
+        {
+            Valve v{GPIO_NUM_19, gpioStub, pr};
+            REQUIRE(v.initialize());
+            REQUIRE(v.free());
+        }
+        // No crash = dtor didn't double-free
+        SUCCEED("dtor after explicit free() did not double-free");
+    }
+
+    SECTION("dtor calls free when free was not called before") {
+        // free() NOT called, dtor must call it
+        {
+            Valve v{GPIO_NUM_19, gpioStub, pr};
+            REQUIRE(v.initialize());
+            REQUIRE(pr.isPinBound(GPIO_NUM_19));
+        }
+        // After dtor ran, the pin should be unregistered
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_19));
     }
 }
 

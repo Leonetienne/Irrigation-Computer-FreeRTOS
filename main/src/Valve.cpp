@@ -12,6 +12,16 @@ Valve::Valve(Valve &&other) noexcept :
     other.isInitialized = false;
 }
 
+Valve::~Valve() noexcept {
+    if (isInitialized) {
+        free();
+    }
+}
+
+bool Valve::isReady() const noexcept {
+    return isInitialized;
+}
+
 bool Valve::initialize() noexcept {
     if (isInitialized) {
         return false;
@@ -23,6 +33,19 @@ bool Valve::initialize() noexcept {
 
     isInitialized = true;
     return true;
+}
+
+bool Valve::free() noexcept {
+    if (isInitialized) {
+        isInitialized = false;
+        
+        if (!gpioPin.free()) {
+            return false;
+        }
+
+        return true;
+    }
+    return false;
 }
 
 bool Valve::getIsOpen() const noexcept {

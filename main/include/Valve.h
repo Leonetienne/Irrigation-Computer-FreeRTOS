@@ -14,12 +14,25 @@ public:
     Valve(gpio_num_t gpioPinNumber, IGpio& gpio, GpioPinRegister& pinRegister) noexcept;
     Valve(const Valve&) = delete;
     Valve(Valve&& other) noexcept;
+    ~Valve() noexcept;
+
+    /**
+     * Will return whether this valve is fully initialized
+     * @return Success state
+     */
+    [[nodiscard]] bool isReady() const noexcept;
 
     /**
      * Will initialize the valve
      * @return Success state
      */
     bool initialize() noexcept;
+
+    /**
+     * Will free the resources owned by this valve
+     * @return Success state
+     */
+    bool free() noexcept;
 
     /**
      * Copy-assignment operator
