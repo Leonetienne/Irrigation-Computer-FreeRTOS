@@ -8,7 +8,10 @@
 #include <cstdint>
 
 enum class STATE : uint8_t {
-    INITIALIZATION // System is starting up
+    INITIALIZATION,  // System is starting up
+    WIFI_ONBOARDING, // System has launched a wifi access point for the user to configure proper wifi credentials
+    OPERATIONAL,     // System is fine and operating normally
+    FAULT,           // The system has entered an invalid state.
 };
 
 #endif //IRRIGATION_COMPUTER_STATES_H
