@@ -13,6 +13,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(irrigation_computer_tests
         GpioPinRegister.cpp
         GpioStub.cpp
+        TimeStub.cpp
         GpioDigitalWritePin.cpp
         Valve.cpp
 
@@ -21,6 +22,9 @@ add_executable(irrigation_computer_tests
         ../main/src/test/stubs/GpioStub.cpp
         ../main/src/Valve.cpp
         ../main/include/Valve.h
+        ../main/include/hal/ITime.h
+        ../main/src/test/stubs/TimeStub.cpp
+        ../main/include/test/stubs/TimeStub.h
 )
 
 
