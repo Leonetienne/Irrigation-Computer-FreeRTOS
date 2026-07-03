@@ -37,8 +37,9 @@ bool Valve::initialize() noexcept {
 
 bool Valve::free() noexcept {
     if (isInitialized) {
+        // We set this to uninitialized right away to prevent an aborted free-call resulting in isInitialized still being true
         isInitialized = false;
-        
+
         if (!gpioPin.free()) {
             return false;
         }

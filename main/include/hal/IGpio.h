@@ -1,7 +1,3 @@
-//
-// Created by Leon Etienne on 21.03.26.
-//
-
 #ifndef IRRIGATION_COMPUTER_IGPIO_H
 #define IRRIGATION_COMPUTER_IGPIO_H
 
