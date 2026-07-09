@@ -5,12 +5,21 @@
 #include <catch2/catch_test_macros.hpp>
 #include "../main/include/GpioPinRegister.h"
 #include "test/stubs/GpioStub.h"
+#include "test/stubs/TimeStub.h"
 #include "../main/include/Valve.h"
+
+#include "test/stubs/TimeStub.h"
 
 TEST_CASE("Valve: lifecycle", "[Valve]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
-    Valve valve{GPIO_NUM_19, gpioStub, pr};
+    TimeStub timeStub{};
+    Valve valve(
+        GPIO_NUM_19,
+        gpioStub,
+        timeStub,
+        pr
+    );
 
     SECTION("not open by default") {
         REQUIRE_FALSE(valve.getIsOpen());
@@ -67,6 +76,49 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
         REQUIRE(valve.initialize());
         REQUIRE(valve.open());
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("last_opened_at is 0 before initialization") {
+        REQUIRE(valve.getLastOpenedAtTime() == 0);
+    }
+
+    SECTION("last_opened_at is 0 after initialization") {
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.getLastOpenedAtTime() == 0);
+    }
+
+    SECTION("last_opened_at is set after opening") {
+        timeStub.setStubbedTime(1500000000);
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.open());
+        REQUIRE(valve.getLastOpenedAtTime() == 1500000000);
+    }
+
+    SECTION("last_opened_at is not unset after closing") {
+        timeStub.setStubbedTime(1500000000);
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.open());
+        REQUIRE(valve.close());
+        REQUIRE(valve.getLastOpenedAtTime() == 1500000000);
+    }
+
+    SECTION("last_opened_at gets overridden by next open") {
+        timeStub.setStubbedTime(1500000000);
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.open());
+        REQUIRE(valve.close());
+        timeStub.setStubbedTime(1500001000);
+        REQUIRE(valve.open());
+        REQUIRE(valve.getLastOpenedAtTime() == 1500001000);
+    }
+
+    SECTION("last_opened_at is not overridden by successive open") {
+        timeStub.setStubbedTime(1500000000);
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.open());
+        timeStub.setStubbedTime(1500001000);
+        REQUIRE(valve.open());
+        REQUIRE(valve.getLastOpenedAtTime() == 1500000000);
     }
 
     SECTION("can close after init") {
@@ -172,7 +224,12 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
     SECTION("dtor calls free only when free was not called before") {
         // free() called explicitly, dtor must not double-free
         {
-            Valve v{GPIO_NUM_19, gpioStub, pr};
+            Valve v(
+                GPIO_NUM_19,
+                gpioStub,
+                timeStub,
+                pr
+            );
             REQUIRE(v.initialize());
             REQUIRE(v.free());
         }
@@ -183,7 +240,12 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
     SECTION("dtor calls free when free was not called before") {
         // free() NOT called, dtor must call it
         {
-            Valve v{GPIO_NUM_19, gpioStub, pr};
+             Valve v(
+                GPIO_NUM_19,
+                gpioStub,
+                timeStub,
+                pr
+            );
             REQUIRE(v.initialize());
             REQUIRE(pr.isPinBound(GPIO_NUM_19));
         }
@@ -195,7 +257,13 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
 TEST_CASE("Valve: move", "[Valve]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
-    Valve valve{GPIO_NUM_19, gpioStub, pr};
+    TimeStub timeStub{};
+    Valve valve(
+        GPIO_NUM_19,
+        gpioStub,
+        timeStub,
+        pr
+    );
 
     SECTION("moved valve retains initialized state") {
         REQUIRE(valve.initialize());
