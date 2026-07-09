@@ -16,6 +16,7 @@ add_executable(irrigation_computer_tests
         TimeStub.cpp
         GpioDigitalWritePin.cpp
         Valve.cpp
+        ValveGroup.cpp
 
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/GpioPinRegister.cpp
@@ -25,6 +26,8 @@ add_executable(irrigation_computer_tests
         ../main/include/hal/ITime.h
         ../main/src/test/stubs/TimeStub.cpp
         ../main/include/test/stubs/TimeStub.h
+        ../main/src/ValveGroup.cpp
+        ../main/include/ValveGroup.h
 )
 
 
