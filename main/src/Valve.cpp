@@ -1,13 +1,20 @@
 #include "../include/Valve.h"
 
-Valve::Valve(gpio_num_t gpioPinNumber, IGpio& gpio, GpioPinRegister& pinRegister) noexcept:
-    gpioPin ( pinRegister, gpio, gpioPinNumber)
+Valve::Valve(
+    gpio_num_t gpioPinNumber,
+    IGpio& i_gpio,
+    ITime& i_time,
+    GpioPinRegister& pinRegister
+) noexcept:
+    gpioPin ( pinRegister, i_gpio, gpioPinNumber),
+    i_time (i_time)
 { }
 
 Valve::Valve(Valve &&other) noexcept :
     isOpen (other.isOpen),
     isInitialized (other.isInitialized),
-    gpioPin (std::move(other.gpioPin))
+    gpioPin (std::move(other.gpioPin)),
+    i_time (other.i_time)
 {
     other.isInitialized = false;
 }
@@ -69,7 +76,13 @@ bool Valve::open() noexcept {
         return false;
     }
 
+    // Fast-accept (no need to set lastOpened at, as it already is open)
+    if (isOpen) {
+        return true;
+    }
+
     isOpen = true;
+    lastOpenedAt = i_time.getTime();
     return gpioPin.setState(PIN_STATE_DIGITAL::HIGH); // Valve is OPEN when pin is HIGH (transistor opens)
 }
 
@@ -78,6 +91,16 @@ bool Valve::close() noexcept {
         return false;
     }
 
+    // Fast-accept
+    if (!isOpen) {
+        return true;
+    }
+
+
     isOpen = false;
     return gpioPin.setState(PIN_STATE_DIGITAL::LOW); // Valve is CLOSED when pin is LOW (transistor closes)
+}
+
+time_t Valve::getLastOpenedAtTime() const noexcept {
+    return lastOpenedAt;
 }

@@ -1,7 +1,7 @@
 #include "platform/GpioDigitalWritePin.h"
 #include "hal/IGpio.h"
+#include "hal/ITime.h"
 #include "GpioPinRegister.h"
-#include "compat/gpio_num_t.h"
 
 #ifndef IRRIGATION_COMPUTER_TESTS_VALVE_H
 #define IRRIGATION_COMPUTER_TESTS_VALVE_H
@@ -11,7 +11,12 @@
  */
 class Valve {
 public:
-    Valve(gpio_num_t gpioPinNumber, IGpio& gpio, GpioPinRegister& pinRegister) noexcept;
+    Valve(
+        gpio_num_t gpioPinNumber,
+        IGpio& gpio,
+        ITime& time,
+        GpioPinRegister& pinRegister
+    ) noexcept;
     Valve(const Valve&) = delete;
     Valve(Valve&& other) noexcept;
     ~Valve() noexcept;
@@ -64,10 +69,17 @@ public:
      */
     bool close() noexcept;
 
+    /**
+     * @return Time time_t this valve was last opened at
+     */
+    [[nodiscard]] time_t getLastOpenedAtTime() const noexcept;
+
 private:
     bool isOpen = false;
     bool isInitialized = false;
     GpioDigitalWritePin gpioPin;
+    ITime& i_time;
+    time_t lastOpenedAt = 0;
 };
 
 
