@@ -74,6 +74,11 @@ public:
      */
     [[nodiscard]] time_t getLastOpenedAtTime() const noexcept;
 
+    /**
+     * @return The assigned gpio pin number
+     */
+    [[nodiscard]] gpio_num_t getPinNumber() const noexcept;
+
 private:
     bool isOpen = false;
     bool isInitialized = false;

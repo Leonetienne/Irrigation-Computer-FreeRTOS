@@ -7,7 +7,6 @@
 #include "test/stubs/GpioStub.h"
 #include "test/stubs/TimeStub.h"
 #include "../main/include/Valve.h"
-
 #include "test/stubs/TimeStub.h"
 
 TEST_CASE("Valve: lifecycle", "[Valve]") {
@@ -130,6 +129,15 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
         REQUIRE(valve.initialize());
         REQUIRE(valve.close());
         REQUIRE_FALSE(valve.getIsOpen());
+    }
+
+    SECTION("getting gpio pin returns the correct pin before initialization") {
+        REQUIRE(valve.getPinNumber() == GPIO_NUM_19);
+    }
+
+    SECTION("getting gpio pin returns the correct pin after initialization") {
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.getPinNumber() == GPIO_NUM_19);
     }
 
     SECTION("close sets gpio to LOW") {

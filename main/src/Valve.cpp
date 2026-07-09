@@ -104,3 +104,7 @@ bool Valve::close() noexcept {
 time_t Valve::getLastOpenedAtTime() const noexcept {
     return lastOpenedAt;
 }
+
+gpio_num_t Valve::getPinNumber() const noexcept {
+    return gpioPin.getGpioNum();
+}
