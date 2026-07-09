@@ -56,7 +56,10 @@ bool Valve::free() noexcept {
     return false;
 }
 
-bool Valve::getIsOpen() const noexcept {
+std::expected<bool, bool> Valve::getIsOpen() const noexcept {
+    if (!isInitialized) {
+        return std::unexpected(false);
+    }
     return isOpen;
 }
 

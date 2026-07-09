@@ -66,7 +66,7 @@ bool ValveGroup::open(std::size_t index) noexcept {
     }
 
     Valve& valve = valves[index];
-    if (isInitialized || valve.isReady()) {
+    if (isInitialized && valve.isReady()) {
         return valve.open();
     }
 
@@ -79,7 +79,7 @@ bool ValveGroup::close(std::size_t index) noexcept {
     }
 
     Valve& valve = valves[index];
-    if (isInitialized || valve.isReady()) {
+    if (isInitialized && valve.isReady()) {
         return valve.close();
     }
 
@@ -92,7 +92,7 @@ bool ValveGroup::setOpenState(std::size_t index, bool openState) noexcept {
     }
 
     Valve& valve = valves[index];
-    if (isInitialized || valve.isReady()) {
+    if (isInitialized && valve.isReady()) {
         return valve.setOpenState(openState);
     }
 
@@ -105,13 +105,28 @@ bool ValveGroup::autoCloseValvesAfterTimeoutPoll() noexcept {
         for (auto& valve : valves) {
             if (
                 valve.isReady() &&
-                valve.getIsOpen() &&
+                valve.getIsOpen().value_or(false) &&
                 i_time.getSecondsSince(valve.getLastOpenedAtTime()) >= NUM_SECONDS_TIMEOUT
                 ) {
-                valve.close();
+                if (!valve.close()) {
+                    return false;
+                }
             }
         }
         return true;
     }
     return false;
+}
+
+std::expected<bool, bool> ValveGroup::getValveOpenState(std::size_t index) const noexcept {
+    if (index >= valves.size()) {
+        return std::unexpected(false);
+    }
+
+    const Valve& valve = valves[index];
+    if (isInitialized && valve.isReady()) {
+        return valve.getIsOpen();
+    }
+
+    return std::unexpected(false);
 }

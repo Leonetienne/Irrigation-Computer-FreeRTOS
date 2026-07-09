@@ -1,10 +1,11 @@
+#ifndef IRRIGATION_COMPUTER_TESTS_VALVE_H
+#define IRRIGATION_COMPUTER_TESTS_VALVE_H
+
 #include "platform/GpioDigitalWritePin.h"
 #include "hal/IGpio.h"
 #include "hal/ITime.h"
 #include "GpioPinRegister.h"
-
-#ifndef IRRIGATION_COMPUTER_TESTS_VALVE_H
-#define IRRIGATION_COMPUTER_TESTS_VALVE_H
+#include <expected>
 
 /**
  * A watering channel that can either be closed or open
@@ -45,9 +46,9 @@ public:
     void operator=(const Valve&) = delete;
 
     /**
-     * @return Whether the valve is currently open
+     * @return Whether the valve is currently open or success state
      */
-    [[nodiscard]] bool getIsOpen() const noexcept;
+    [[nodiscard]] std::expected<bool, bool>  getIsOpen() const noexcept;
 
     /**
      * Opens or closes the valve.

@@ -2,6 +2,7 @@
 #define IRRIGATION_COMPUTER_TESTS_VALVEGROUP_H
 
 #include <array>
+#include <expected>
 #include "Valve.h"
 #include "hal/ITime.h"
 
@@ -63,6 +64,13 @@ public:
      * @return Success state
      */
     bool autoCloseValvesAfterTimeoutPoll() noexcept;
+
+    /**
+     * Gets the open state of a valve
+     * @param index Valve index
+     * @return Valve state (or success state)
+     */
+    [[nodiscard]] std::expected<bool, bool> getValveOpenState(std::size_t index) const noexcept;
 
 private:
     bool isInitialized = false;

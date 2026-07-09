@@ -383,3 +383,48 @@ TEST_CASE("ValveGroup: auto close timeout", "[ValveGroup]") {
         REQUIRE_FALSE(group.autoCloseValvesAfterTimeoutPoll());
     }
 }
+
+TEST_CASE("ValveGroup: getValveOpenState", "[ValveGroup]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+
+    std::array<Valve, 8> valves = {
+        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_1, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_2, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_3, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_4, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_5, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_6, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
+    };
+
+    ValveGroup group(std::move(valves), timeStub);
+
+    SECTION("returns error before init") {
+        REQUIRE_FALSE(group.getValveOpenState(0).has_value());
+    }
+
+    SECTION("returns error for out-of-bounds index") {
+        REQUIRE(group.initialize());
+        REQUIRE_FALSE(group.getValveOpenState(8).has_value());
+    }
+
+    SECTION("returns false for a closed valve after init") {
+        REQUIRE(group.initialize());
+        REQUIRE(group.getValveOpenState(0) == false);
+    }
+
+    SECTION("returns true for an open valve after init") {
+        REQUIRE(group.initialize());
+        REQUIRE(group.open(3));
+        REQUIRE(group.getValveOpenState(3) == true);
+    }
+
+    SECTION("returns error after free") {
+        REQUIRE(group.initialize());
+        REQUIRE(group.free());
+        REQUIRE_FALSE(group.getValveOpenState(0).has_value());
+    }
+}

@@ -20,8 +20,8 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
         pr
     );
 
-    SECTION("not open by default") {
-        REQUIRE_FALSE(valve.getIsOpen());
+    SECTION("getIsOpen returns error before init") {
+        REQUIRE_FALSE(valve.getIsOpen().has_value());
     }
 
     SECTION("not initialized by default") {
@@ -68,7 +68,7 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
     SECTION("isOpen reports true after open") {
         REQUIRE(valve.initialize());
         REQUIRE(valve.open());
-        REQUIRE(valve.getIsOpen());
+        REQUIRE(valve.getIsOpen() == true);
     }
 
     SECTION("open sets gpio to HIGH") {
@@ -128,7 +128,7 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
     SECTION("isOpen stays false after close") {
         REQUIRE(valve.initialize());
         REQUIRE(valve.close());
-        REQUIRE_FALSE(valve.getIsOpen());
+        REQUIRE(valve.getIsOpen() == false);
     }
 
     SECTION("getting gpio pin returns the correct pin before initialization") {
@@ -149,29 +149,29 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
     SECTION("can switch from open to close") {
         REQUIRE(valve.initialize());
         REQUIRE(valve.open());
-        REQUIRE(valve.getIsOpen());
+        REQUIRE(valve.getIsOpen() == true);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
 
         REQUIRE(valve.close());
-        REQUIRE_FALSE(valve.getIsOpen());
+        REQUIRE(valve.getIsOpen() == false);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("can switch from close to open") {
         REQUIRE(valve.initialize());
         REQUIRE(valve.close());
-        REQUIRE_FALSE(valve.getIsOpen());
+        REQUIRE(valve.getIsOpen() == false);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
 
         REQUIRE(valve.open());
-        REQUIRE(valve.getIsOpen());
+        REQUIRE(valve.getIsOpen() == true);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
     SECTION("setOpenState(true) opens the valve") {
         REQUIRE(valve.initialize());
         REQUIRE(valve.setOpenState(true));
-        REQUIRE(valve.getIsOpen());
+        REQUIRE(valve.getIsOpen() == true);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
@@ -179,8 +179,14 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
         REQUIRE(valve.initialize());
         REQUIRE(valve.open());
         REQUIRE(valve.setOpenState(false));
-        REQUIRE_FALSE(valve.getIsOpen());
+        REQUIRE(valve.getIsOpen() == false);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("getIsOpen returns error after free") {
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.free());
+        REQUIRE_FALSE(valve.getIsOpen().has_value());
     }
 
     SECTION("free succeeds after init") {
@@ -279,14 +285,14 @@ TEST_CASE("Valve: move", "[Valve]") {
 
         Valve moved{std::move(valve)};
 
-        // Moved-from valve is quietly "not initialized" (isOpen == false)
-        REQUIRE_FALSE(valve.getIsOpen());
-        // Moved-to valve kept its state
-        REQUIRE_FALSE(moved.getIsOpen());
+        // Moved-from valve is uninitialized, getIsOpen reports error
+        REQUIRE_FALSE(valve.getIsOpen().has_value());
+        // Moved-to valve kept its state (initialized, not open)
+        REQUIRE(moved.getIsOpen() == false);
 
         // New owner can operate normally
         REQUIRE(moved.open());
-        REQUIRE(moved.getIsOpen());
+        REQUIRE(moved.getIsOpen() == true);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
@@ -296,7 +302,7 @@ TEST_CASE("Valve: move", "[Valve]") {
 
         Valve moved{std::move(valve)};
 
-        REQUIRE(moved.getIsOpen());
+        REQUIRE(moved.getIsOpen() == true);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
@@ -306,7 +312,7 @@ TEST_CASE("Valve: move", "[Valve]") {
 
         Valve moved{std::move(valve)};
 
-        REQUIRE_FALSE(moved.getIsOpen());
+        REQUIRE(moved.getIsOpen() == false);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 }
