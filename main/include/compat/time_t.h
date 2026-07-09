@@ -1,11 +1,12 @@
 #ifndef IRRIGATION_COMPUTER_TIME_T_H
 #define IRRIGATION_COMPUTER_TIME_T_H
 
-// If compiling for host, define time_t as int, otherwise include idf header
+// The responsible header files for host and platform are identical by
+// coincidence. Keeping this pattern for consistency.
 #ifdef HOST_BUILD
-#include <time.h>
+#include <ctime>
 #else
-#include "FreeRTOS_POSIX/time.h"
+#include <ctime>
 #endif
 
 #endif //IRRIGATION_COMPUTER_TIME_T_H

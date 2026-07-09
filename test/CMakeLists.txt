@@ -28,6 +28,8 @@ add_executable(irrigation_computer_tests
         ../main/include/test/stubs/TimeStub.h
         ../main/src/ValveGroup.cpp
         ../main/include/ValveGroup.h
+        ../main/src/platform/TimeEsp32.cpp
+        ../main/include/platform/TimeEsp32.h
 )
 
 
