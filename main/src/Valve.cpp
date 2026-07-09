@@ -3,7 +3,7 @@
 Valve::Valve(
     gpio_num_t gpioPinNumber,
     IGpio& i_gpio,
-    ITime& i_time,
+    const ITime& i_time,
     GpioPinRegister& pinRegister
 ) noexcept:
     gpioPin ( pinRegister, i_gpio, gpioPinNumber),
@@ -14,7 +14,7 @@ Valve::Valve(Valve &&other) noexcept :
     isOpen (other.isOpen),
     isInitialized (other.isInitialized),
     gpioPin (std::move(other.gpioPin)),
-    i_time (other.i_time)
+    i_time (std::move(other.i_time))
 {
     other.isInitialized = false;
 }

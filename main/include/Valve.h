@@ -14,7 +14,7 @@ public:
     Valve(
         gpio_num_t gpioPinNumber,
         IGpio& gpio,
-        ITime& time,
+        const ITime& time,
         GpioPinRegister& pinRegister
     ) noexcept;
     Valve(const Valve&) = delete;
@@ -75,7 +75,7 @@ public:
     [[nodiscard]] time_t getLastOpenedAtTime() const noexcept;
 
     /**
-     * @return The assigned gpio pin number
+     * @return The assigned gpio pin
      */
     [[nodiscard]] gpio_num_t getPinNumber() const noexcept;
 
@@ -83,7 +83,7 @@ private:
     bool isOpen = false;
     bool isInitialized = false;
     GpioDigitalWritePin gpioPin;
-    ITime& i_time;
+    const ITime& i_time;
     time_t lastOpenedAt = 0;
 };
 
