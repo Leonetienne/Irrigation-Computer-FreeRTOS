@@ -12,6 +12,7 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(irrigation_computer_tests
         GpioPinRegister.cpp
+        WifiManagerStub.cpp
         GpioStub.cpp
         TimeStub.cpp
         GpioDigitalWritePin.cpp
@@ -30,6 +31,10 @@ add_executable(irrigation_computer_tests
         ../main/include/ValveGroup.h
         ../main/src/platform/TimeEsp32.cpp
         ../main/include/platform/TimeEsp32.h
+        ../main/include/hal/IWifiManager.h
+        ../main/src/test/stubs/WifiManagerStub.cpp
+        ../main/include/test/stubs/WifiManagerStub.h
+        WifiManagerStub.cpp
 )
 
 
