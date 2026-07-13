@@ -1,7 +1,3 @@
-//
-// Created by Agent on 08.08.26.
-//
-
 #include <catch2/catch_test_macros.hpp>
 #include "test/stubs/TimeStub.h"
 
