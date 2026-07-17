@@ -34,6 +34,25 @@ GpioDigitalWritePin::~GpioDigitalWritePin() {
     }
 }
 
+GpioDigitalWritePin& GpioDigitalWritePin::operator=(GpioDigitalWritePin&& other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
+
+    if (ready) {
+        free();
+    }
+
+    // pinRegister, gpio and pinNum are bound at construction and left untouched here
+    ready = other.ready;
+    currentState = other.currentState;
+
+    other.ready = false;
+    other.currentState = PIN_STATE_DIGITAL::LOW;
+
+    return *this;
+}
+
 bool GpioDigitalWritePin::initialize() noexcept {
     // Fail if pin is already ready
     if (ready) {

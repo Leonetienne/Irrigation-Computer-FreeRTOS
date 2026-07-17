@@ -1,25 +1,50 @@
 #include "test/stubs/WifiManagerStub.h"
 
-void WifiManagerStub::begin(const char* ssid, const char* password) {
+bool WifiManagerStub::begin(const char* ssid, const char* password) noexcept {
     lastSsid = ssid;
     lastPassword = password;
     ++beginCallCount;
+    return true;
 }
 
-void WifiManagerStub::setOnConnected(std::function<void()> callback) {
+bool WifiManagerStub::free() noexcept {
+    return true;
+}
+
+WifiConnectionState WifiManagerStub::getState() const noexcept {
+    return state;
+}
+
+void WifiManagerStub::setOnConnected(std::function<void()> callback) noexcept {
     onConnected = std::move(callback);
 }
 
-void WifiManagerStub::setOnDisconnected(std::function<void()> callback) {
+void WifiManagerStub::setOnDisconnected(std::function<void()> callback) noexcept {
     onDisconnected = std::move(callback);
 }
 
 void WifiManagerStub::simulateConnected() {
-    state_ = WifiConnectionState::Connected;
+    state = WifiConnectionState::Connected;
     if (onConnected) onConnected();
 }
 
 void WifiManagerStub::simulateDisconnected() {
-    state_ = WifiConnectionState::Disconnected;
+    state = WifiConnectionState::Disconnected;
     if (onDisconnected) onDisconnected();
+}
+
+void WifiManagerStub::forceState(WifiConnectionState forcedState) {
+    state = forcedState;
+}
+
+const std::string & WifiManagerStub::getLastSsid() const {
+    return lastSsid;
+}
+
+const std::string & WifiManagerStub::getLastPassword() const {
+    return lastPassword;
+}
+
+int WifiManagerStub::getBeginCallCount() const {
+    return beginCallCount;
 }

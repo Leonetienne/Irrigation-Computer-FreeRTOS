@@ -22,6 +22,13 @@ public:
     GpioDigitalWritePin& operator=(const GpioDigitalWritePin&) = delete;
 
     /**
+     * Move-assignment operator.
+     * Note: leaves pinNum/pinRegister/gpio untouched - only transfers ready/currentState.
+     * Only meaningful between instances bound to the same pin.
+     */
+    GpioDigitalWritePin& operator=(GpioDigitalWritePin&& other) noexcept;
+
+    /**
      * Will initialize the pin
      * @return Success state
      */

@@ -3,6 +3,7 @@
 
 #include <array>
 #include <expected>
+#include <optional>
 #include "Valve.h"
 #include "hal/ITime.h"
 
@@ -11,17 +12,22 @@
  */
 class ValveGroup {
 public:
-    ValveGroup(std::array<Valve, 8> valves, const ITime& i_time) noexcept;
+    ValveGroup(const ITime& i_time) noexcept;
     ValveGroup(const ValveGroup &) = delete;
     ValveGroup(ValveGroup &&) noexcept;
     ~ValveGroup() noexcept;
+
+    /**
+     * Move-assignment operator
+     */
+    ValveGroup& operator=(ValveGroup&& other) noexcept;
 
     /**
      * Will initialize all valves with a valid gpio pin
      * Time complexity: O(n)
      * @return Success state
      */
-    bool initialize() noexcept;
+    bool initialize(std::array<Valve, 8> newValves) noexcept;
 
     /**
      * Will release resources acquired by this valve group
@@ -74,7 +80,8 @@ public:
 
 private:
     bool isInitialized = false;
-    std::array<Valve, 8> valves;
+    // Optional to allow empty initialization in ctor, and create after reading NVS
+    std::optional<std::array<Valve, 8>> valves;
     const ITime& i_time;
 };
 

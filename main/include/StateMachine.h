@@ -1,7 +1,3 @@
-//
-// Created by Leon Etienne on 18.03.26.
-//
-
 #ifndef IRRIGATION_COMPUTER_STATEMACHINE_H
 #define IRRIGATION_COMPUTER_STATEMACHINE_H
 
@@ -14,8 +10,13 @@ public:
     StateMachine(StateMachine&&) = delete;
     StateMachine& operator=(const StateMachine&) = delete;
 
+    /**
+     * @return The current state
+     */
+    [[nodiscard]] STATE getState() const noexcept;
+
 private:
-    STATE currentState;
+    STATE currentState = STATE::INITIALIZATION;
 };
 
 #endif //IRRIGATION_COMPUTER_STATEMACHINE_H

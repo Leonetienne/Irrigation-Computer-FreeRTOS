@@ -56,6 +56,26 @@ bool Valve::free() noexcept {
     return false;
 }
 
+Valve& Valve::operator=(Valve&& other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
+
+    if (isInitialized) {
+        free();
+    }
+
+    // i_time is left untouched (reference member, bound at construction)
+    isOpen = other.isOpen;
+    isInitialized = other.isInitialized;
+    gpioPin = std::move(other.gpioPin);
+    lastOpenedAt = other.lastOpenedAt;
+
+    other.isInitialized = false;
+
+    return *this;
+}
+
 std::expected<bool, bool> Valve::getIsOpen() const noexcept {
     if (!isInitialized) {
         return std::unexpected(false);

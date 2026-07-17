@@ -25,47 +25,47 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
         Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(std::move(valves), timeStub);
+    ValveGroup group(timeStub);
 
     SECTION("not initialized by default") {
         REQUIRE_FALSE(group.isReady());
     }
 
     SECTION("initialize succeeds with all valid pins") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
     }
 
     SECTION("isReady returns true after initialize") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.isReady());
     }
 
     SECTION("initialize twice fails") {
-        REQUIRE(group.initialize());
-        REQUIRE_FALSE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
+        REQUIRE_FALSE(group.initialize(std::move(valves)));
     }
 
     SECTION("open sets gpio to HIGH after init") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.open(3));
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
     SECTION("close sets gpio to LOW after init") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.open(3));
         REQUIRE(group.close(3));
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("setOpenState(true) opens the valve") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.setOpenState(5, true));
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_5) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
     SECTION("setOpenState(false) closes the valve") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.open(5));
         REQUIRE(group.setOpenState(5, false));
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_5) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
@@ -84,25 +84,25 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
     }
 
     SECTION("open fails with out-of-bounds index") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE_FALSE(group.open(8));
         REQUIRE_FALSE(group.open(-1));
     }
 
     SECTION("close fails with out-of-bounds index") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE_FALSE(group.close(8));
         REQUIRE_FALSE(group.close(-1));
     }
 
     SECTION("setOpenState fails with out-of-bounds index") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE_FALSE(group.setOpenState(8, true));
         REQUIRE_FALSE(group.setOpenState(-1, true));
     }
 
     SECTION("free releases all initialized valves") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(pr.isPinBound(GPIO_NUM_0));
         REQUIRE(pr.isPinBound(GPIO_NUM_7));
         REQUIRE(group.free());
@@ -115,31 +115,31 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
     }
 
     SECTION("free fails after free") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.free());
         REQUIRE_FALSE(group.free());
     }
 
     SECTION("isReady returns false after free") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.free());
         REQUIRE_FALSE(group.isReady());
     }
 
     SECTION("open fails after free") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.free());
         REQUIRE_FALSE(group.open(0));
     }
 
     SECTION("close fails after free") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.free());
         REQUIRE_FALSE(group.close(0));
     }
 
     SECTION("setOpenState fails after free") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.free());
         REQUIRE_FALSE(group.setOpenState(0, true));
     }
@@ -156,8 +156,8 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
                 Valve(GPIO_NUM_14, gpioStub, timeStub, pr),
                 Valve(GPIO_NUM_15, gpioStub, timeStub, pr),
             };
-            ValveGroup scopedGroup(std::move(scopedValves), timeStub);
-            REQUIRE(scopedGroup.initialize());
+            ValveGroup scopedGroup(timeStub);
+            REQUIRE(scopedGroup.initialize(std::move(scopedValves)));
             REQUIRE(scopedGroup.free());
         }
         SUCCEED("dtor after explicit free() did not double-free");
@@ -175,8 +175,8 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
                 Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
                 Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
             };
-            ValveGroup scopedGroup(std::move(scopedValves), timeStub);
-            REQUIRE(scopedGroup.initialize());
+            ValveGroup scopedGroup(timeStub);
+            REQUIRE(scopedGroup.initialize(std::move(scopedValves)));
             REQUIRE(pr.isPinBound(GPIO_NUM_16));
         }
         REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_16));
@@ -199,8 +199,8 @@ TEST_CASE("ValveGroup: each valve index maps to correct gpio pin", "[ValveGroup]
         Valve(GPIO_NUM_17, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(std::move(valves), timeStub);
-    REQUIRE(group.initialize());
+    ValveGroup group(timeStub);
+    REQUIRE(group.initialize(std::move(valves)));
 
     SECTION("open valve 0 only sets GPIO_NUM_10 HIGH") {
         REQUIRE(group.open(0));
@@ -268,14 +268,14 @@ TEST_CASE("ValveGroup: initialize skips NC pins", "[ValveGroup]") {
         Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(std::move(valves), timeStub);
+    ValveGroup group(timeStub);
 
     SECTION("initialize succeeds with mixed valid and NC pins") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
     }
 
     SECTION("NC-pin valves cannot open after group init") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE_FALSE(group.open(1));
         REQUIRE_FALSE(group.open(3));
         REQUIRE_FALSE(group.open(5));
@@ -283,7 +283,7 @@ TEST_CASE("ValveGroup: initialize skips NC pins", "[ValveGroup]") {
     }
 
     SECTION("valid-pin valves can open after group init") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.open(0));
         REQUIRE(group.open(2));
         REQUIRE(group.open(4));
@@ -307,33 +307,59 @@ TEST_CASE("ValveGroup: move", "[ValveGroup]") {
         Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(std::move(valves), timeStub);
+    ValveGroup group(timeStub);
 
     SECTION("moved-from group reports not ready") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         ValveGroup moved{std::move(group)};
         REQUIRE_FALSE(group.isReady());
     }
 
     SECTION("moved-to group can operate valves") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         ValveGroup moved{std::move(group)};
         REQUIRE(moved.open(0));
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_0) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
     SECTION("moved-from group cannot open valves") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         ValveGroup moved{std::move(group)};
         REQUIRE_FALSE(group.open(0));
     }
 
     SECTION("moved-to group can free") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         ValveGroup moved{std::move(group)};
         REQUIRE(pr.isPinBound(GPIO_NUM_0));
         REQUIRE(moved.free());
         REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_0));
+    }
+
+    SECTION("move-assigning into an already-initialized group frees its own valves first") {
+        REQUIRE(group.initialize(std::move(valves)));
+
+        std::array<Valve, 8> otherValves = {
+            Valve(GPIO_NUM_20, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_21, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_22, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_23, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+        };
+        ValveGroup other(timeStub);
+        REQUIRE(other.initialize(std::move(otherValves)));
+        REQUIRE(pr.isPinBound(GPIO_NUM_0));
+        REQUIRE(pr.isPinBound(GPIO_NUM_20));
+
+        group = std::move(other);
+
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_0));
+        REQUIRE(pr.isPinBound(GPIO_NUM_20));
+        REQUIRE(group.open(0));
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_20) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 }
 
@@ -353,10 +379,10 @@ TEST_CASE("ValveGroup: auto close timeout", "[ValveGroup]") {
         Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(std::move(valves), timeStub);
+    ValveGroup group(timeStub);
 
     SECTION("closes valves open longer than timeout") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.open(0));
         REQUIRE(group.open(3));
 
@@ -369,7 +395,7 @@ TEST_CASE("ValveGroup: auto close timeout", "[ValveGroup]") {
     }
 
     SECTION("does not close valves under the timeout") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.open(0));
 
         timeStub.setStubbedTime(timeStub.getTime() + 1800);
@@ -400,30 +426,30 @@ TEST_CASE("ValveGroup: getValveOpenState", "[ValveGroup]") {
         Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(std::move(valves), timeStub);
+    ValveGroup group(timeStub);
 
     SECTION("returns error before init") {
         REQUIRE_FALSE(group.getValveOpenState(0).has_value());
     }
 
     SECTION("returns error for out-of-bounds index") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE_FALSE(group.getValveOpenState(8).has_value());
     }
 
     SECTION("returns false for a closed valve after init") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.getValveOpenState(0) == false);
     }
 
     SECTION("returns true for an open valve after init") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.open(3));
         REQUIRE(group.getValveOpenState(3) == true);
     }
 
     SECTION("returns error after free") {
-        REQUIRE(group.initialize());
+        REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.free());
         REQUIRE_FALSE(group.getValveOpenState(0).has_value());
     }
