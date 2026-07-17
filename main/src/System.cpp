@@ -4,6 +4,7 @@
 
 #include "System.h"
 #include <esp_log.h>
+#include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -25,13 +26,23 @@ System::~System() noexcept {
 }
 
 void System::init() noexcept {
+    // TODO: temporary until INVS/NVSEsp32/NVSStub exist, then move ownership there
+    esp_err_t nvsResult = nvs_flash_init();
+    if (nvsResult == ESP_ERR_NVS_NO_FREE_PAGES || nvsResult == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        nvs_flash_erase();
+        nvsResult = nvs_flash_init();
+    }
+    if (nvsResult != ESP_OK) {
+        ESP_LOGE(LOG_TAG, "nvs_flash_init failed: %d", nvsResult);
+    }
+
     wifiMan.setOnConnected([this]() { onWifiConnected(); });
     wifiMan.setOnDisconnected([this]() { onWifiDisconnected(); });
 
     // Immediately turn on wifi
     wifiMan.begin(
-        "my_wifi",
-        "1234"
+        "bembel2share_optout_nomap",
+        "96shork96"
     );
 
     // Load valves (four valves active, four inactive)

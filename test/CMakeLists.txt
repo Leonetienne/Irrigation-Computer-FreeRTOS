@@ -15,6 +15,7 @@ add_executable(irrigation_computer_tests
         WifiManagerStub.cpp
         GpioStub.cpp
         TimeStub.cpp
+        NVSStub.cpp
         GpioDigitalWritePin.cpp
         Valve.cpp
         ValveGroup.cpp
@@ -31,9 +32,12 @@ add_executable(irrigation_computer_tests
         ../main/include/ValveGroup.h
         ../main/src/platform/TimeEsp32.cpp
         ../main/include/platform/TimeEsp32.h
-        ../main/include/hal/IWifiManager.h
+        ../main/include/hal/IWifiManager.hx
         ../main/src/test/stubs/WifiManagerStub.cpp
         ../main/include/test/stubs/WifiManagerStub.h
+        ../main/include/hal/INVS.h
+        ../main/src/test/stubs/NVSStub.cpp
+        ../main/include/test/stubs/NVSStub.h
         WifiManagerStub.cpp
 )
 
