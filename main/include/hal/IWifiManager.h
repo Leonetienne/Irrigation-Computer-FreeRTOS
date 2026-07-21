@@ -2,13 +2,7 @@
 #define IRRIGATION_COMPUTER_TESTS_IWIFIMANAGERS_H
 
 #include <functional>
-
-enum class WifiConnectionState {
-    Disconnected,
-    Connecting,
-    Connected,
-    Failed,
-};
+#include "enum/WifiConnectionState.h"
 
 /**
  * Abstract interface to manage a wifi connection

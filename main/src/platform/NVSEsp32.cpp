@@ -1,4 +1,5 @@
 #include "platform/NVSEsp32.h"
+#include "nvs_flash.h"
 #include <cstring>
 
 NVSEsp32::~NVSEsp32() noexcept {
@@ -9,6 +10,17 @@ NVSEsp32::~NVSEsp32() noexcept {
 
 bool NVSEsp32::begin(const char* namespaceName) noexcept {
     if (isInitialized) {
+        return false;
+    }
+
+    esp_err_t nvsResult = nvs_flash_init();
+    if (nvsResult == ESP_ERR_NVS_NO_FREE_PAGES || nvsResult == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        if (nvs_flash_erase() != ESP_OK) {
+            return false;
+        }
+        nvsResult = nvs_flash_init();
+    }
+    if (nvsResult != ESP_OK) {
         return false;
     }
 

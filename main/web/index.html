@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Irrigation Computer</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #10131a;
+            font-family: sans-serif;
+            color: #e8e8e8;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            font-size: 1.2rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            background: #2f7bd6;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:active {
+            background: #1e5aa8;
+        }
+    </style>
+</head>
+<body>
+    <div class="buttons">
+        <button onclick="setValve('open')">Valve 0 open</button>
+        <button onclick="setValve('close')">Valve 0 close</button>
+    </div>
+    <script>
+        function setValve(action) {
+            fetch(`/api/valve/0/${action}`, {method: 'POST'});
+        }
+    </script>
+</body>
+</html>

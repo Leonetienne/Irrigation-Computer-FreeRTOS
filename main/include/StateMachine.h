@@ -1,7 +1,7 @@
 #ifndef IRRIGATION_COMPUTER_STATEMACHINE_H
 #define IRRIGATION_COMPUTER_STATEMACHINE_H
 
-#include "States.h"
+#include "enum/States.h"
 
 class StateMachine {
 public:

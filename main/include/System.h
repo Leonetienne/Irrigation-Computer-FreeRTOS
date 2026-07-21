@@ -10,6 +10,8 @@
 #include "platform/GpioEsp32.h"
 #include "platform/TimeEsp32.h"
 #include "platform/WifiManagerEsp32.h"
+#include "platform/HttpServerEsp32.h"
+#include "platform/NVSEsp32.h"
 #include "ValveGroup.h"
 
 /**
@@ -50,7 +52,9 @@ private:
     GpioPinRegister gpioPinRegister;
     GpioEsp32 gpio;
     TimeEsp32 time;
+    NVSEsp32 nvs;
     WifiManagerEsp32 wifiMan;
+    HttpServerEsp32 httpServer;
     ValveGroup valveGroup;
 };
 

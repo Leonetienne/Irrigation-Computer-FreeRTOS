@@ -4,7 +4,6 @@
 
 #include "System.h"
 #include <esp_log.h>
-#include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -15,7 +14,9 @@ System::System() noexcept :
     gpioPinRegister(),
     gpio(),
     time(),
+    nvs(),
     wifiMan(),
+    httpServer(),
     valveGroup(time)
 { }
 
@@ -26,14 +27,9 @@ System::~System() noexcept {
 }
 
 void System::init() noexcept {
-    // TODO: temporary until INVS/NVSEsp32/NVSStub exist, then move ownership there
-    esp_err_t nvsResult = nvs_flash_init();
-    if (nvsResult == ESP_ERR_NVS_NO_FREE_PAGES || nvsResult == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        nvs_flash_erase();
-        nvsResult = nvs_flash_init();
-    }
-    if (nvsResult != ESP_OK) {
-        ESP_LOGE(LOG_TAG, "nvs_flash_init failed: %d", nvsResult);
+    // wifiMan needs nvs initialized (the wifi driver stores its own state there)
+    if (!nvs.begin("system")) {
+        ESP_LOGE(LOG_TAG, "nvs.begin failed");
     }
 
     wifiMan.setOnConnected([this]() { onWifiConnected(); });
@@ -41,8 +37,8 @@ void System::init() noexcept {
 
     // Immediately turn on wifi
     wifiMan.begin(
-        "bembel2share_optout_nomap",
-        "96shork96"
+        "test_ssid",
+        "test_pw"
     );
 
     // Load valves (four valves active, four inactive)
@@ -72,11 +68,18 @@ bool System::free() noexcept {
         return false;
     }
 
+    // httpServer may already be stopped (e.g. if wifi was disconnected) - that's fine
+    httpServer.free();
+
     if (!wifiMan.free()) {
         return false;
     }
 
     if (!valveGroup.free()) {
+        return false;
+    }
+
+    if (!nvs.free()) {
         return false;
     }
 
@@ -89,8 +92,10 @@ void System::update() noexcept {
 
 void System::onWifiConnected() noexcept {
     ESP_LOGI(LOG_TAG, "wifi connected");
+    httpServer.begin(valveGroup);
 }
 
 void System::onWifiDisconnected() noexcept {
     ESP_LOGW(LOG_TAG, "wifi disconnected");
+    httpServer.free();
 }

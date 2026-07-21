@@ -2,6 +2,7 @@
 
 #include <esp_log.h>
 #include "esp_wifi.h"
+#include "esp_netif.h"
 #include <cstring>
 
 static const char* LOG_TAG = "WifiManagerEsp32";
@@ -153,7 +154,8 @@ void WifiManagerEsp32::eventHandler(
 
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         self->state = WifiConnectionState::Connected;
-        ESP_LOGI(LOG_TAG, "connected, got ip");
+        const auto* event = static_cast<ip_event_got_ip_t*>(data);
+        ESP_LOGI(LOG_TAG, "connected, got ip: " IPSTR, IP2STR(&event->ip_info.ip));
 
         if (self->onConnected) {
             self->onConnected();
