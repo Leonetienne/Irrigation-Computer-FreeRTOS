@@ -21,6 +21,7 @@ add_executable(irrigation_computer_tests
         ValveGroup.cpp
         ApiRouteParser.cpp
         ApiController.cpp
+        WifiCredentialsParser.cpp
         StateMachine.cpp
 
         ../main/src/platform/GpioDigitalWritePin.cpp
@@ -46,6 +47,8 @@ add_executable(irrigation_computer_tests
         ../main/src/ApiRouteParser.cpp
         ../main/include/ApiController.h
         ../main/src/ApiController.cpp
+        ../main/include/WifiCredentialsParser.h
+        ../main/src/WifiCredentialsParser.cpp
         ../main/include/WifiCredentials.h
         ../main/include/StateMachine.h
         ../main/src/StateMachine.cpp

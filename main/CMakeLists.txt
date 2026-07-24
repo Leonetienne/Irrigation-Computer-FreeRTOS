@@ -13,6 +13,7 @@ idf_component_register(SRCS
                        "src/ValveGroup.cpp"
                        "src/ApiRouteParser.cpp"
                        "src/ApiController.cpp"
+                       "src/WifiCredentialsParser.cpp"
                        PRIV_REQUIRES spi_flash
                        REQUIRES esp_driver_gpio esp_wifi esp_event esp_netif nvs_flash esp_http_server esp_hw_support
                        INCLUDE_DIRS "include"
