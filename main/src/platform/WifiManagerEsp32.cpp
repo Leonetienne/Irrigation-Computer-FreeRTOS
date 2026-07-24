@@ -3,7 +3,9 @@
 #include <esp_log.h>
 #include "esp_wifi.h"
 #include "esp_netif.h"
+#include "esp_random.h"
 #include <cstring>
+#include <cstdio>
 
 static const char* LOG_TAG = "WifiManagerEsp32";
 
@@ -13,7 +15,7 @@ WifiManagerEsp32::~WifiManagerEsp32() noexcept {
     }
 }
 
-bool WifiManagerEsp32::begin(const char* ssid, const char* password) noexcept {
+bool WifiManagerEsp32::beginUserWifi(const WifiCredentials& credentials) noexcept {
     if (isInitialized) {
         return false;
     }
@@ -24,8 +26,8 @@ bool WifiManagerEsp32::begin(const char* ssid, const char* password) noexcept {
     if (esp_event_loop_create_default() != ESP_OK) {
         return false;
     }
-    staNetif = esp_netif_create_default_wifi_sta();
-    if (staNetif == nullptr) {
+    netif = esp_netif_create_default_wifi_sta();
+    if (netif == nullptr) {
         return false;
     }
 
@@ -52,16 +54,17 @@ bool WifiManagerEsp32::begin(const char* ssid, const char* password) noexcept {
         ) != ESP_OK) {
         return false;
     }
+    eventHandlersRegistered = true;
 
     wifi_config_t wifiConfig = {};
     std::strncpy(
         reinterpret_cast<char *>(wifiConfig.sta.ssid),
-        ssid,
+        credentials.ssid.c_str(),
         sizeof(wifiConfig.sta.ssid) - 1
     );
     std::strncpy(
         reinterpret_cast<char *>(wifiConfig.sta.password),
-        password,
+        credentials.password.c_str(),
         sizeof(wifiConfig.sta.password) - 1
     );
     wifiConfig.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK; // Use at min WPA2
@@ -80,6 +83,64 @@ bool WifiManagerEsp32::begin(const char* ssid, const char* password) noexcept {
     return true;
 }
 
+bool WifiManagerEsp32::beginOnboardingWifi() noexcept {
+    if (isInitialized) {
+        return false;
+    }
+
+    if (esp_netif_init() != ESP_OK) {
+        return false;
+    }
+    if (esp_event_loop_create_default() != ESP_OK) {
+        return false;
+    }
+    netif = esp_netif_create_default_wifi_ap();
+    if (netif == nullptr) {
+        return false;
+    }
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    if (esp_wifi_init(&cfg) != ESP_OK) {
+        return false;
+    }
+
+    char ssid[32] = {};
+    std::snprintf(
+        ssid,
+        sizeof(ssid),
+        "irrigation_computer_%06u",
+        static_cast<unsigned>(esp_random() % 1000000)
+    );
+
+    wifi_config_t wifiConfig = {};
+    std::strncpy(
+        reinterpret_cast<char *>(wifiConfig.ap.ssid),
+        ssid,
+        sizeof(wifiConfig.ap.ssid) - 1
+    );
+    wifiConfig.ap.ssid_len = std::strlen(ssid);
+    wifiConfig.ap.channel = 1;
+    wifiConfig.ap.authmode = WIFI_AUTH_OPEN;
+    wifiConfig.ap.max_connection = 4;
+
+    if (esp_wifi_set_mode(WIFI_MODE_AP) != ESP_OK) {
+        return false;
+    }
+    if (esp_wifi_set_config(WIFI_IF_AP, &wifiConfig) != ESP_OK) {
+        return false;
+    }
+    if (esp_wifi_start() != ESP_OK) {
+        return false;
+    }
+
+    ESP_LOGI(LOG_TAG, "onboarding ap started, ssid: %s", ssid);
+
+    // the ap is up as soon as esp_wifi_start succeeds
+    state = WifiConnectionState::Connected;
+    isInitialized = true;
+    return true;
+}
+
 bool WifiManagerEsp32::free() noexcept {
     if (!isInitialized) {
         return false;
@@ -90,21 +151,23 @@ bool WifiManagerEsp32::free() noexcept {
     if (esp_wifi_stop() != ESP_OK) {
         success = false;
     }
-    if (esp_event_handler_unregister(
-        WIFI_EVENT, ESP_EVENT_ANY_ID, &WifiManagerEsp32::eventHandler) != ESP_OK) {
-        success = false;
-    }
-    if (esp_event_handler_unregister(
-        IP_EVENT, IP_EVENT_STA_GOT_IP, &WifiManagerEsp32::eventHandler) != ESP_OK) {
-        success = false;
+    if (eventHandlersRegistered) {
+        if (esp_event_handler_unregister(
+            WIFI_EVENT, ESP_EVENT_ANY_ID, &WifiManagerEsp32::eventHandler) != ESP_OK) {
+            success = false;
+        }
+        if (esp_event_handler_unregister(
+            IP_EVENT, IP_EVENT_STA_GOT_IP, &WifiManagerEsp32::eventHandler) != ESP_OK) {
+            success = false;
+        }
     }
     if (esp_wifi_deinit() != ESP_OK) {
         success = false;
     }
 
-    if (staNetif != nullptr) {
-        esp_netif_destroy_default_wifi(staNetif);
-        staNetif = nullptr;
+    if (netif != nullptr) {
+        esp_netif_destroy_default_wifi(netif);
+        netif = nullptr;
     }
 
     if (esp_event_loop_delete_default() != ESP_OK) {
@@ -112,6 +175,7 @@ bool WifiManagerEsp32::free() noexcept {
     }
 
     isInitialized = false;
+    eventHandlersRegistered = false;
     state = WifiConnectionState::Disconnected;
 
     return success;

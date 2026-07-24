@@ -13,15 +13,20 @@ public:
     WifiManagerStub& operator=(WifiManagerStub&&) = delete;
 
     /**
-     * Will begin the wifi session
-     * @param ssid
-     * @param password
+     * Connects to an existing access point using the given credentials
+     * @param credentials
      * @return Success state
      */
-    bool begin(const char* ssid, const char* password) noexcept override;
+    bool beginUserWifi(const WifiCredentials& credentials) noexcept override;
 
     /**
-     * Will release the resources acquired by begin()
+     * Spawns this device's own open access point for onboarding
+     * @return Success state
+     */
+    bool beginOnboardingWifi() noexcept override;
+
+    /**
+     * Will release the resources acquired by beginUserWifi()/beginOnboardingWifi()
      * @return Success state
      */
     bool free() noexcept override;
@@ -56,7 +61,8 @@ public:
 
     [[nodiscard]] const std::string& getLastSsid() const;
     [[nodiscard]] const std::string& getLastPassword() const;
-    [[nodiscard]] int getBeginCallCount() const;
+    [[nodiscard]] int getBeginUserWifiCallCount() const;
+    [[nodiscard]] int getBeginOnboardingWifiCallCount() const;
 
 private:
     WifiConnectionState state = WifiConnectionState::Disconnected;
@@ -65,7 +71,8 @@ private:
 
     std::string lastSsid;
     std::string lastPassword;
-    int beginCallCount = 0;
+    int beginUserWifiCallCount = 0;
+    int beginOnboardingWifiCallCount = 0;
 };
 
 #endif //IRRIGATION_COMPUTER_TESTS_WIFIMANAGERSTUB_H

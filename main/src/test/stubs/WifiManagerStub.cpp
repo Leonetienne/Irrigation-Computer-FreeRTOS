@@ -1,9 +1,14 @@
 #include "test/stubs/WifiManagerStub.h"
 
-bool WifiManagerStub::begin(const char* ssid, const char* password) noexcept {
-    lastSsid = ssid;
-    lastPassword = password;
-    ++beginCallCount;
+bool WifiManagerStub::beginUserWifi(const WifiCredentials& credentials) noexcept {
+    lastSsid = credentials.ssid;
+    lastPassword = credentials.password;
+    ++beginUserWifiCallCount;
+    return true;
+}
+
+bool WifiManagerStub::beginOnboardingWifi() noexcept {
+    ++beginOnboardingWifiCallCount;
     return true;
 }
 
@@ -45,6 +50,10 @@ const std::string & WifiManagerStub::getLastPassword() const {
     return lastPassword;
 }
 
-int WifiManagerStub::getBeginCallCount() const {
-    return beginCallCount;
+int WifiManagerStub::getBeginUserWifiCallCount() const {
+    return beginUserWifiCallCount;
+}
+
+int WifiManagerStub::getBeginOnboardingWifiCallCount() const {
+    return beginOnboardingWifiCallCount;
 }

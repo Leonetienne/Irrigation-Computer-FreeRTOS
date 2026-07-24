@@ -46,6 +46,7 @@ add_executable(irrigation_computer_tests
         ../main/src/ApiRouteParser.cpp
         ../main/include/ApiController.h
         ../main/src/ApiController.cpp
+        ../main/include/WifiCredentials.h
         ../main/include/StateMachine.h
         ../main/src/StateMachine.cpp
         ../main/include/enum/States.h

@@ -3,6 +3,7 @@
 
 #include <functional>
 #include "enum/WifiConnectionState.h"
+#include "WifiCredentials.h"
 
 /**
  * Abstract interface to manage a wifi connection
@@ -12,15 +13,20 @@ public:
     virtual ~IWifiManager() = default;
 
     /**
-     * Will begin the wifi session
-     * @param ssid
-     * @param password
+     * Connects to an existing access point using the given credentials
+     * @param credentials
      * @return Success state
      */
-    virtual bool begin(const char* ssid, const char* password) noexcept = 0;
+    virtual bool beginUserWifi(const WifiCredentials& credentials) noexcept = 0;
 
     /**
-     * Will release the resources acquired by begin()
+     * Spawns this device's own open access point for onboarding
+     * @return Success state
+     */
+    virtual bool beginOnboardingWifi() noexcept = 0;
+
+    /**
+     * Will release the resources acquired by beginUserWifi()/beginOnboardingWifi()
      * @return Success state
      */
     virtual bool free() noexcept = 0;

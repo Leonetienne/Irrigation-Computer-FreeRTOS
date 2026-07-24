@@ -8,16 +8,32 @@ TEST_CASE("WifiManagerStub", "[WifiManagerStub]") {
         REQUIRE(stub.getState() == WifiConnectionState::Disconnected);
     }
 
-    SECTION("begin records ssid and password") {
-        stub.begin("my_example_ap", "1234");
+    SECTION("beginUserWifi records ssid and password") {
+        stub.beginUserWifi(WifiCredentials{"my_example_ap", "1234"});
         REQUIRE(stub.getLastSsid() == "my_example_ap");
         REQUIRE(stub.getLastPassword() == "1234");
     }
 
-    SECTION("begin increments the call count") {
-        stub.begin("my_example_ap", "1234");
-        stub.begin("my_example_ap", "1234");
-        REQUIRE(stub.getBeginCallCount() == 2);
+    SECTION("beginUserWifi increments the call count") {
+        stub.beginUserWifi(WifiCredentials{"my_example_ap", "1234"});
+        stub.beginUserWifi(WifiCredentials{"my_example_ap", "1234"});
+        REQUIRE(stub.getBeginUserWifiCallCount() == 2);
+    }
+
+    SECTION("beginOnboardingWifi increments its own call count") {
+        stub.beginOnboardingWifi();
+        stub.beginOnboardingWifi();
+        REQUIRE(stub.getBeginOnboardingWifiCallCount() == 2);
+    }
+
+    SECTION("beginOnboardingWifi does not affect beginUserWifi's call count") {
+        stub.beginOnboardingWifi();
+        REQUIRE(stub.getBeginUserWifiCallCount() == 0);
+    }
+
+    SECTION("beginUserWifi does not affect beginOnboardingWifi's call count") {
+        stub.beginUserWifi(WifiCredentials{"my_example_ap", "1234"});
+        REQUIRE(stub.getBeginOnboardingWifiCallCount() == 0);
     }
 
     SECTION("simulateConnected sets state to Connected") {
