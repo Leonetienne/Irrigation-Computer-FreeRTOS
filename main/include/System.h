@@ -35,6 +35,7 @@ public:
     bool free() noexcept;
 
 private:
+    void beforeShutdown() noexcept;
     void update() noexcept;
 
     /**
@@ -54,8 +55,8 @@ private:
     TimeEsp32 time;
     NVSEsp32 nvs;
     WifiManagerEsp32 wifiMan;
-    HttpServerEsp32 httpServer;
     ValveGroup valveGroup;
+    HttpServerEsp32 httpServer;
 };
 
 

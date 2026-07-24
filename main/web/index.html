@@ -7,10 +7,12 @@
     <style>
         body {
             margin: 0;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 2rem;
             background: #10131a;
             font-family: sans-serif;
             color: #e8e8e8;
@@ -34,6 +36,20 @@
         button:active {
             background: #1e5aa8;
         }
+
+        .wifi-setup {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 16rem;
+        }
+
+        .wifi-setup input {
+            font-size: 1rem;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -41,9 +57,28 @@
         <button onclick="setValve('open')">Valve 0 open</button>
         <button onclick="setValve('close')">Valve 0 close</button>
     </div>
+
+    <form class="wifi-setup" onsubmit="return saveWifi()">
+        <input id="ssid" type="text" placeholder="WLAN SSID" required>
+        <input id="password" type="password" placeholder="WLAN Passwort">
+        <button type="submit">WLAN speichern &amp; neu starten</button>
+    </form>
+
     <script>
         function setValve(action) {
             fetch(`/api/valve/0/${action}`, {method: 'POST'});
+        }
+
+        function saveWifi() {
+            const ssid = document.getElementById('ssid').value;
+            const password = document.getElementById('password').value;
+            const body = `ssid=${encodeURIComponent(ssid)}&password=${encodeURIComponent(password)}`;
+            fetch('/api/wifi', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body,
+            });
+            return false;
         }
     </script>
 </body>

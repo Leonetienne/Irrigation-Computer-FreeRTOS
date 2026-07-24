@@ -16,8 +16,8 @@ System::System() noexcept :
     time(),
     nvs(),
     wifiMan(),
-    httpServer(),
-    valveGroup(time)
+    valveGroup(time),
+    httpServer(valveGroup, nvs, stateMachine)
 { }
 
 System::~System() noexcept {
@@ -35,11 +35,19 @@ void System::init() noexcept {
     wifiMan.setOnConnected([this]() { onWifiConnected(); });
     wifiMan.setOnDisconnected([this]() { onWifiDisconnected(); });
 
-    // Immediately turn on wifi
-    wifiMan.begin(
-        "test_ssid",
-        "test_pw"
-    );
+    char storedSsid[NVS_MAX_STRING_LENGTH + 1] = {};
+    char storedPassword[NVS_MAX_STRING_LENGTH + 1] = {};
+    const bool hasStoredCredentials =
+        nvs.getString("wifi_ssid", storedSsid) &&
+        nvs.getString("wifi_pass", storedPassword);
+
+    if (hasStoredCredentials) {
+        wifiMan.beginUserWifi(WifiCredentials{storedSsid, storedPassword});
+    } else {
+        // ap comes up immediately, no ip event to wait for
+        wifiMan.beginOnboardingWifi();
+        httpServer.begin();
+    }
 
     // Load valves (four valves active, four inactive)
     valveGroup.initialize({
@@ -61,6 +69,7 @@ void System::loop() noexcept {
         update();
         vTaskDelay(pdMS_TO_TICKS(10));
     }
+    beforeShutdown();
 }
 
 bool System::free() noexcept {
@@ -87,12 +96,15 @@ bool System::free() noexcept {
     return true;
 }
 
+void System::beforeShutdown() noexcept {
+}
+
 void System::update() noexcept {
 }
 
 void System::onWifiConnected() noexcept {
     ESP_LOGI(LOG_TAG, "wifi connected");
-    httpServer.begin(valveGroup);
+    httpServer.begin();
 }
 
 void System::onWifiDisconnected() noexcept {
