@@ -2,6 +2,8 @@
 #include "../main/include/GpioPinRegister.h"
 #include "test/stubs/GpioStub.h"
 #include "test/stubs/TimeStub.h"
+#include "test/stubs/NVSStub.h"
+#include "../main/include/StateMachine.h"
 #include "../main/include/Valve.h"
 #include "../main/include/ValveGroup.h"
 #include "../main/include/ApiController.h"
@@ -58,5 +60,38 @@ TEST_CASE("ApiController: executeValveOperation before group init", "[ApiControl
 
     SECTION("Close fails") {
         REQUIRE_FALSE(ApiController::executeValveOperation(group, ValveCommand{0, ValveAction::Close}));
+    }
+}
+
+TEST_CASE("ApiController: saveWifiCredentials", "[ApiController]") {
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    StateMachine stateMachine;
+
+    SECTION("stores ssid and password") {
+        REQUIRE(ApiController::saveWifiCredentials(nvs, stateMachine, WifiCredentials{"MyHomeWifi", "hunter2"}));
+
+        char ssid[NVS_MAX_STRING_LENGTH + 1] = {};
+        char password[NVS_MAX_STRING_LENGTH + 1] = {};
+        REQUIRE(nvs.getString("wifi_ssid", ssid));
+        REQUIRE(nvs.getString("wifi_pass", password));
+        REQUIRE(std::string(ssid) == "MyHomeWifi");
+        REQUIRE(std::string(password) == "hunter2");
+    }
+
+    SECTION("requests a shutdown on success") {
+        REQUIRE(ApiController::saveWifiCredentials(nvs, stateMachine, WifiCredentials{"MyHomeWifi", "hunter2"}));
+        REQUIRE(stateMachine.getState() == STATE::SHUTTING_DOWN);
+    }
+
+    SECTION("fails before nvs is initialized") {
+        NVSStub uninitializedNvs{};
+        REQUIRE_FALSE(ApiController::saveWifiCredentials(uninitializedNvs, stateMachine, WifiCredentials{"MyHomeWifi", "hunter2"}));
+    }
+
+    SECTION("does not request a shutdown when saving fails") {
+        NVSStub uninitializedNvs{};
+        ApiController::saveWifiCredentials(uninitializedNvs, stateMachine, WifiCredentials{"MyHomeWifi", "hunter2"});
+        REQUIRE(stateMachine.getState() == STATE::INITIALIZATION);
     }
 }

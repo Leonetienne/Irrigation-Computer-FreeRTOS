@@ -3,6 +3,9 @@
 
 #include "ValveGroup.h"
 #include "ApiRouteParser.h"
+#include "hal/INVS.h"
+#include "WifiCredentials.h"
+#include "StateMachine.h"
 
 /**
  * Executes parsed api commands against the application state.
@@ -16,6 +19,19 @@ public:
      * @return Success state
      */
     [[nodiscard]] static bool executeValveOperation(ValveGroup& valveGroup, const ValveCommand& command) noexcept;
+
+    /**
+     * Persists wifi credentials and requests a shutdown
+     * @param nvs
+     * @param stateMachine
+     * @param credentials
+     * @return Success state
+     */
+    [[nodiscard]] static bool saveWifiCredentials(
+        INVS& nvs,
+        StateMachine& stateMachine,
+        const WifiCredentials& credentials
+    ) noexcept;
 };
 
 #endif //IRRIGATION_COMPUTER_TESTS_APICONTROLLER_H
