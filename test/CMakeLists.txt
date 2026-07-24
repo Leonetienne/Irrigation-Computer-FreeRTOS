@@ -21,6 +21,7 @@ add_executable(irrigation_computer_tests
         ValveGroup.cpp
         ApiRouteParser.cpp
         ApiController.cpp
+        StateMachine.cpp
 
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/GpioPinRegister.cpp
@@ -45,6 +46,9 @@ add_executable(irrigation_computer_tests
         ../main/src/ApiRouteParser.cpp
         ../main/include/ApiController.h
         ../main/src/ApiController.cpp
+        ../main/include/StateMachine.h
+        ../main/src/StateMachine.cpp
+        ../main/include/enum/States.h
         WifiManagerStub.cpp
 )
 

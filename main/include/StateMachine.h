@@ -15,6 +15,11 @@ public:
      */
     [[nodiscard]] STATE getState() const noexcept;
 
+    /**
+     * Sets the current state
+     */
+    void setState(STATE state) noexcept;
+
 private:
     STATE currentState = STATE::INITIALIZATION;
 };

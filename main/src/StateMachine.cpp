@@ -8,3 +8,7 @@ StateMachine::StateMachine() noexcept :
 STATE StateMachine::getState() const noexcept {
     return currentState;
 }
+
+void StateMachine::setState(STATE state) noexcept {
+    currentState = state;
+}
