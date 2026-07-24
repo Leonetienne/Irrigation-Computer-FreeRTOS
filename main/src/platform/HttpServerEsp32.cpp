@@ -1,9 +1,16 @@
 #include "platform/HttpServerEsp32.h"
 #include "ApiRouteParser.h"
 #include "ApiController.h"
+#include "WifiCredentialsParser.h"
 
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
 extern const uint8_t index_html_end[] asm("_binary_index_html_end");
+
+HttpServerEsp32::HttpServerEsp32(ValveGroup& valveGroup, INVS& nvs, StateMachine& stateMachine) noexcept:
+    valveGroup(valveGroup),
+    nvs(nvs),
+    stateMachine(stateMachine)
+{ }
 
 HttpServerEsp32::~HttpServerEsp32() noexcept {
     if (isInitialized) {
@@ -11,12 +18,10 @@ HttpServerEsp32::~HttpServerEsp32() noexcept {
     }
 }
 
-bool HttpServerEsp32::begin(ValveGroup& valveGroup) noexcept {
+bool HttpServerEsp32::begin() noexcept {
     if (isInitialized) {
         return false;
     }
-
-    this->valveGroup = &valveGroup;
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
@@ -89,6 +94,16 @@ esp_err_t HttpServerEsp32::handleGetApi(httpd_req_t* req) noexcept {
 }
 
 esp_err_t HttpServerEsp32::handlePost(httpd_req_t* req) noexcept {
+    const std::string_view uri = req->uri;
+
+    if (uri == "/api/wifi") {
+        return handleWifiCredentials(req);
+    }
+
+    return handleValveCommand(req);
+}
+
+esp_err_t HttpServerEsp32::handleValveCommand(httpd_req_t* req) noexcept {
     const auto command = ApiRouteParser::parseValveRoute(req->uri);
     if (!command.has_value()) {
         httpd_resp_send_404(req);
@@ -96,7 +111,39 @@ esp_err_t HttpServerEsp32::handlePost(httpd_req_t* req) noexcept {
     }
 
     auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
-    if (!ApiController::executeValveOperation(*self->valveGroup, *command)) {
+    if (!ApiController::executeValveOperation(self->valveGroup, *command)) {
+        httpd_resp_set_status(req, "500 Internal Server Error");
+        httpd_resp_send(req, nullptr, 0);
+        return ESP_OK;
+    }
+
+    httpd_resp_send(req, nullptr, 0);
+    return ESP_OK;
+}
+
+esp_err_t HttpServerEsp32::handleWifiCredentials(httpd_req_t* req) noexcept {
+    char body[256] = {};
+    const int contentLength = req->content_len < sizeof(body) - 1
+        ? static_cast<int>(req->content_len)
+        : static_cast<int>(sizeof(body) - 1);
+
+    const int received = httpd_req_recv(req, body, contentLength);
+    if (received <= 0) {
+        httpd_resp_set_status(req, "400 Bad Request");
+        httpd_resp_send(req, nullptr, 0);
+        return ESP_FAIL;
+    }
+    body[received] = '\0';
+
+    const auto credentials = WifiCredentialsParser::parse(std::string_view(body, received));
+    if (!credentials.has_value()) {
+        httpd_resp_set_status(req, "400 Bad Request");
+        httpd_resp_send(req, nullptr, 0);
+        return ESP_FAIL;
+    }
+
+    auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
+    if (!ApiController::saveWifiCredentials(self->nvs, self->stateMachine, *credentials)) {
         httpd_resp_set_status(req, "500 Internal Server Error");
         httpd_resp_send(req, nullptr, 0);
         return ESP_OK;

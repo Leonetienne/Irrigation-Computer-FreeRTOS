@@ -3,13 +3,15 @@
 
 #include "esp_http_server.h"
 #include "ValveGroup.h"
+#include "hal/INVS.h"
+#include "StateMachine.h"
 
 /**
  * Esp32-Implementation of the web ui / api http server.
  */
 class HttpServerEsp32 {
 public:
-    HttpServerEsp32() = default;
+    HttpServerEsp32(ValveGroup& valveGroup, INVS& nvs, StateMachine& stateMachine) noexcept;
     ~HttpServerEsp32() noexcept;
 
     HttpServerEsp32(const HttpServerEsp32&) = delete;
@@ -19,10 +21,9 @@ public:
 
     /**
      * Starts the http server and registers all uri handlers
-     * @param valveGroup operated on by valve api commands, must outlive this server
      * @return Success state
      */
-    bool begin(ValveGroup& valveGroup) noexcept;
+    bool begin() noexcept;
 
     /**
      * Stops the http server and releases the resources acquired by begin()
@@ -43,14 +44,25 @@ private:
     static esp_err_t handleGetApi(httpd_req_t* req) noexcept;
 
     /**
-     * Routes POST /api/ requests. Parses the route via ApiRouteParser
-     * and dispatches the resulting command via ApiController.
+     * Routes POST /api/ requests
      */
     static esp_err_t handlePost(httpd_req_t* req) noexcept;
 
+    /**
+     * Parses and dispatches a valve command
+     */
+    static esp_err_t handleValveCommand(httpd_req_t* req) noexcept;
+
+    /**
+     * Saves wifi credentials submitted via the web ui and requests a shutdown
+     */
+    static esp_err_t handleWifiCredentials(httpd_req_t* req) noexcept;
+
     bool isInitialized = false;
     httpd_handle_t server = nullptr;
-    ValveGroup* valveGroup = nullptr;
+    ValveGroup& valveGroup;
+    INVS& nvs;
+    StateMachine& stateMachine;
 };
 
 #endif //IRRIGATION_COMPUTER_TESTS_HTTPSERVERESP32_H
