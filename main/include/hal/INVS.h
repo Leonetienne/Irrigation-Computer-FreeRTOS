@@ -14,7 +14,6 @@ public:
     INVS() = default;
     INVS(const INVS&) = delete;
     INVS& operator=(const INVS&) = delete;
-    INVS(INVS&&) = delete;
     INVS& operator=(INVS&&) = delete;
     virtual ~INVS() = default;
 
@@ -45,7 +44,7 @@ public:
      * @param outValue receives the stored value, left untouched on failure
      * @return Success state
      */
-    virtual bool getInt(const char* key, int32_t& outValue) const noexcept = 0;
+    [[nodiscard]] virtual bool getInt(const char* key, int32_t& outValue) const noexcept = 0;
 
     /**
      * Stores a string value (at most NVS_MAX_STRING_LENGTH characters) under the given key
@@ -61,7 +60,19 @@ public:
      * @param outValue buffer of at least NVS_MAX_STRING_LENGTH + 1 bytes to receive the stored value
      * @return Success state
      */
-    virtual bool getString(const char* key, char* outValue) const noexcept = 0;
+    [[nodiscard]] virtual bool getString(const char* key, char* outValue) const noexcept = 0;
+
+    /**
+     * @return Whether the nvs system is ready and initialized
+     */
+    [[nodiscard]] bool isReady() const noexcept { return isInitialized; }
+
+protected:
+    INVS(INVS&& other) noexcept : isInitialized(other.isInitialized) {
+        other.isInitialized = false;
+    }
+
+    bool isInitialized = false;
 };
 
 #endif //IRRIGATION_COMPUTER_TESTS_INVS_H

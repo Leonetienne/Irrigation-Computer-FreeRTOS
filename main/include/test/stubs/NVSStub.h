@@ -62,7 +62,6 @@ public:
     [[nodiscard]] int getBeginCallCount() const;
 
 private:
-    bool isInitialized = false;
     std::string lastNamespace;
     int beginCallCount = 0;
 

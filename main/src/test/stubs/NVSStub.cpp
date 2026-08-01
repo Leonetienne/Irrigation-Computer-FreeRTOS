@@ -2,13 +2,12 @@
 #include <cstring>
 
 NVSStub::NVSStub(NVSStub&& other) noexcept :
-    isInitialized(other.isInitialized),
+    INVS(std::move(other)),
     lastNamespace(std::move(other.lastNamespace)),
     beginCallCount(other.beginCallCount),
     intValues(std::move(other.intValues)),
     stringValues(std::move(other.stringValues))
 {
-    other.isInitialized = false;
     other.beginCallCount = 0;
 }
 

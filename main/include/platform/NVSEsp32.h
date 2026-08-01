@@ -62,7 +62,6 @@ public:
     bool getString(const char* key, char* outValue) const noexcept override;
 
 private:
-    bool isInitialized = false;
     nvs_handle_t handle = 0;
 };
 

@@ -23,6 +23,7 @@ add_executable(irrigation_computer_tests
         ApiController.cpp
         WifiCredentialsParser.cpp
         StateMachine.cpp
+        SettingsManager.cpp
 
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/GpioPinRegister.cpp
@@ -53,6 +54,8 @@ add_executable(irrigation_computer_tests
         ../main/include/StateMachine.h
         ../main/src/StateMachine.cpp
         ../main/include/enum/States.h
+        ../main/include/SettingsManager.h
+        ../main/src/SettingsManager.cpp
         WifiManagerStub.cpp
 )
 

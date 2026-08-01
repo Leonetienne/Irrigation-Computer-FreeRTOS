@@ -1,12 +1,12 @@
 #include "platform/NVSEsp32.h"
 #include "nvs_flash.h"
 #include <cstring>
+#include <utility>
 
 NVSEsp32::NVSEsp32(NVSEsp32&& other) noexcept :
-    isInitialized(other.isInitialized),
+    INVS(std::move(other)),
     handle(other.handle)
 {
-    other.isInitialized = false;
     other.handle = 0;
 }
 
