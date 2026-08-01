@@ -15,9 +15,10 @@ System::System() noexcept :
     gpio(),
     time(),
     nvs(),
+    settings(nvs),
     wifiMan(),
     valveGroup(time),
-    httpServer(valveGroup, nvs, stateMachine)
+    httpServer(valveGroup, settings, stateMachine)
 { }
 
 System::~System() noexcept {
@@ -35,14 +36,10 @@ void System::init() noexcept {
     wifiMan.setOnConnected([this]() { onWifiConnected(); });
     wifiMan.setOnDisconnected([this]() { onWifiDisconnected(); });
 
-    char storedSsid[NVS_MAX_STRING_LENGTH + 1] = {};
-    char storedPassword[NVS_MAX_STRING_LENGTH + 1] = {};
-    const bool hasStoredCredentials =
-        nvs.getString("wifi_ssid", storedSsid) &&
-        nvs.getString("wifi_pass", storedPassword);
+    const auto storedCredentials = settings.retrieveWifiCredentials();
 
-    if (hasStoredCredentials) {
-        wifiMan.beginUserWifi(WifiCredentials{storedSsid, storedPassword});
+    if (storedCredentials.has_value()) {
+        wifiMan.beginUserWifi(*storedCredentials);
     } else {
         // ap comes up immediately, no ip event to wait for
         wifiMan.beginOnboardingWifi();

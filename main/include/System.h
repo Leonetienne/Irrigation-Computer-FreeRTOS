@@ -12,6 +12,7 @@
 #include "platform/WifiManagerEsp32.h"
 #include "platform/HttpServerEsp32.h"
 #include "platform/NVSEsp32.h"
+#include "SettingsManager.h"
 #include "ValveGroup.h"
 
 /**
@@ -54,6 +55,7 @@ private:
     GpioEsp32 gpio;
     TimeEsp32 time;
     NVSEsp32 nvs;
+    SettingsManager settings;
     WifiManagerEsp32 wifiMan;
     ValveGroup valveGroup;
     HttpServerEsp32 httpServer;

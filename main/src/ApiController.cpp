@@ -13,15 +13,11 @@ bool ApiController::executeValveOperation(ValveGroup& valveGroup, const ValveCom
 }
 
 bool ApiController::saveWifiCredentials(
-    INVS& nvs,
+    SettingsManager& settings,
     StateMachine& stateMachine,
     const WifiCredentials& credentials
 ) noexcept {
-    const bool saved =
-        nvs.setString("wifi_ssid", credentials.ssid.c_str()) &&
-        nvs.setString("wifi_pass", credentials.password.c_str());
-
-    if (!saved) {
+    if (!settings.storeWifiCredentials(credentials)) {
         return false;
     }
 

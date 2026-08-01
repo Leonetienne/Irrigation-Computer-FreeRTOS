@@ -3,7 +3,7 @@
 
 #include "ValveGroup.h"
 #include "ApiRouteParser.h"
-#include "hal/INVS.h"
+#include "SettingsManager.h"
 #include "WifiCredentials.h"
 #include "StateMachine.h"
 
@@ -22,13 +22,13 @@ public:
 
     /**
      * Persists wifi credentials and requests a shutdown
-     * @param nvs
+     * @param settings
      * @param stateMachine
      * @param credentials
      * @return Success state
      */
     [[nodiscard]] static bool saveWifiCredentials(
-        INVS& nvs,
+        SettingsManager& settings,
         StateMachine& stateMachine,
         const WifiCredentials& credentials
     ) noexcept;

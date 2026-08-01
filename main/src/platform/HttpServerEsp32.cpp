@@ -6,9 +6,9 @@
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
 extern const uint8_t index_html_end[] asm("_binary_index_html_end");
 
-HttpServerEsp32::HttpServerEsp32(ValveGroup& valveGroup, INVS& nvs, StateMachine& stateMachine) noexcept:
+HttpServerEsp32::HttpServerEsp32(ValveGroup& valveGroup, SettingsManager& settings, StateMachine& stateMachine) noexcept:
     valveGroup(valveGroup),
-    nvs(nvs),
+    settings(settings),
     stateMachine(stateMachine)
 { }
 
@@ -143,7 +143,7 @@ esp_err_t HttpServerEsp32::handleWifiCredentials(httpd_req_t* req) noexcept {
     }
 
     auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
-    if (!ApiController::saveWifiCredentials(self->nvs, self->stateMachine, *credentials)) {
+    if (!ApiController::saveWifiCredentials(self->settings, self->stateMachine, *credentials)) {
         httpd_resp_set_status(req, "500 Internal Server Error");
         httpd_resp_send(req, nullptr, 0);
         return ESP_OK;

@@ -3,7 +3,7 @@
 
 #include "esp_http_server.h"
 #include "ValveGroup.h"
-#include "hal/INVS.h"
+#include "SettingsManager.h"
 #include "StateMachine.h"
 
 /**
@@ -11,7 +11,7 @@
  */
 class HttpServerEsp32 {
 public:
-    HttpServerEsp32(ValveGroup& valveGroup, INVS& nvs, StateMachine& stateMachine) noexcept;
+    HttpServerEsp32(ValveGroup& valveGroup, SettingsManager& settings, StateMachine& stateMachine) noexcept;
     HttpServerEsp32(const HttpServerEsp32&) = delete;
     HttpServerEsp32& operator=(const HttpServerEsp32&) = delete;
     HttpServerEsp32(HttpServerEsp32&&) = delete;
@@ -60,7 +60,7 @@ private:
     bool isInitialized = false;
     httpd_handle_t server = nullptr;
     ValveGroup& valveGroup;
-    INVS& nvs;
+    SettingsManager& settings;
     StateMachine& stateMachine;
 };
 
