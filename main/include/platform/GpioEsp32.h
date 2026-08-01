@@ -12,6 +12,11 @@
  */
 class GpioEsp32 : public IGpio {
 public:
+    GpioEsp32() = default;
+    GpioEsp32(const GpioEsp32&) = delete;
+    GpioEsp32& operator=(const GpioEsp32&) = delete;
+    GpioEsp32(GpioEsp32&&) noexcept;
+    GpioEsp32& operator=(GpioEsp32&&) = delete;
 
     /**
      * Calls gpio_reset_pin

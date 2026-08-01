@@ -10,7 +10,6 @@
 class TimeStub : public ITime {
 public:
     TimeStub() = default;
-    // Since this is purely a non-static-class to allow for DI and does not hold internal state, we're fine allowing copies.
     TimeStub(const TimeStub&) = default;
     TimeStub(TimeStub&&) = default;
 

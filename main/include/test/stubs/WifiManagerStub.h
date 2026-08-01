@@ -9,7 +9,7 @@ public:
     WifiManagerStub() = default;
     WifiManagerStub(const WifiManagerStub&) = delete;
     WifiManagerStub& operator=(const WifiManagerStub&) = delete;
-    WifiManagerStub(WifiManagerStub&&) = delete;
+    WifiManagerStub(WifiManagerStub&&) noexcept;
     WifiManagerStub& operator=(WifiManagerStub&&) = delete;
 
     /**

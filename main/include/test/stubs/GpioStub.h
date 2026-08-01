@@ -12,8 +12,8 @@ class GpioStub : public IGpio {
 public:
     GpioStub() = default;
     GpioStub(const GpioStub&) = delete;
-    GpioStub(GpioStub&& other) noexcept;
     GpioStub& operator=(const GpioStub&) = delete;
+    GpioStub(GpioStub&& other) noexcept;
     ~GpioStub() override = default;
 
     /**

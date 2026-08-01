@@ -10,6 +10,11 @@
  */
 class IWifiManager {
 public:
+    IWifiManager() = default;
+    IWifiManager(const IWifiManager&) = delete;
+    IWifiManager& operator=(const IWifiManager&) = delete;
+    IWifiManager(IWifiManager&&) = delete;
+    IWifiManager& operator=(IWifiManager&&) = delete;
     virtual ~IWifiManager() = default;
 
     /**

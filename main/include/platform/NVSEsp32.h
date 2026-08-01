@@ -10,12 +10,11 @@
 class NVSEsp32 : public INVS {
 public:
     NVSEsp32() = default;
-    ~NVSEsp32() noexcept override;
-
     NVSEsp32(const NVSEsp32&) = delete;
     NVSEsp32& operator=(const NVSEsp32&) = delete;
-    NVSEsp32(NVSEsp32&&) = delete;
+    NVSEsp32(NVSEsp32&&) noexcept;
     NVSEsp32& operator=(NVSEsp32&&) = delete;
+    ~NVSEsp32() noexcept override;
 
     /**
      * Opens the given namespace for reading and writing

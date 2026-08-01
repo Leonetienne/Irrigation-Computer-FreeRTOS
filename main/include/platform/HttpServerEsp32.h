@@ -12,12 +12,11 @@
 class HttpServerEsp32 {
 public:
     HttpServerEsp32(ValveGroup& valveGroup, INVS& nvs, StateMachine& stateMachine) noexcept;
-    ~HttpServerEsp32() noexcept;
-
     HttpServerEsp32(const HttpServerEsp32&) = delete;
     HttpServerEsp32& operator=(const HttpServerEsp32&) = delete;
     HttpServerEsp32(HttpServerEsp32&&) = delete;
     HttpServerEsp32& operator=(HttpServerEsp32&&) = delete;
+    ~HttpServerEsp32() noexcept;
 
     /**
      * Starts the http server and registers all uri handlers

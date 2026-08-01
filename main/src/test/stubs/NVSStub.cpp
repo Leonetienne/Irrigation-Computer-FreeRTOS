@@ -1,6 +1,17 @@
 #include "test/stubs/NVSStub.h"
 #include <cstring>
 
+NVSStub::NVSStub(NVSStub&& other) noexcept :
+    isInitialized(other.isInitialized),
+    lastNamespace(std::move(other.lastNamespace)),
+    beginCallCount(other.beginCallCount),
+    intValues(std::move(other.intValues)),
+    stringValues(std::move(other.stringValues))
+{
+    other.isInitialized = false;
+    other.beginCallCount = 0;
+}
+
 bool NVSStub::begin(const char* namespaceName) noexcept {
     if (isInitialized) {
         return false;

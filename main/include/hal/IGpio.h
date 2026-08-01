@@ -11,6 +11,11 @@
  */
 class IGpio {
 public:
+    IGpio() = default;
+    IGpio(const IGpio&) = delete;
+    IGpio& operator=(const IGpio&) = delete;
+    IGpio(IGpio&&) = delete;
+    IGpio& operator=(IGpio&&) = delete;
     virtual ~IGpio() = default;
 
     /**

@@ -21,9 +21,9 @@ class System {
 public:
     System() noexcept;
     System(const System&) = delete;
+    System& operator=(const System&) = delete;
     System(System&&) = delete;
     ~System() noexcept;
-    System& operator=(const System&) = delete;
 
     void init() noexcept;
     void loop() noexcept;

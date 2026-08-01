@@ -19,7 +19,9 @@ public:
         GpioPinRegister& pinRegister
     ) noexcept;
     Valve(const Valve&) = delete;
+    void operator=(const Valve&) = delete;
     Valve(Valve&& other) noexcept;
+    Valve& operator=(Valve&& other) noexcept;
     ~Valve() noexcept;
 
     /**
@@ -39,18 +41,6 @@ public:
      * @return Success state
      */
     bool free() noexcept;
-
-    /**
-     * Copy-assignment operator
-     */
-    void operator=(const Valve&) = delete;
-
-    /**
-     * Move-assignment operator.
-     * Note: leaves this valve's gpio pin identity untouched - only transfers state
-     * (open/initialized/last-opened). Only meaningful between valves bound to the same pin.
-     */
-    Valve& operator=(Valve&& other) noexcept;
 
     /**
      * @return Whether the valve is currently open or success state

@@ -9,7 +9,6 @@
 class TimeEsp32 : public ITime {
 public:
     TimeEsp32() = default;
-    // Since this is purely a non-static-class to allow for DI and does not hold internal state, we're fine allowing copies.
     TimeEsp32(const TimeEsp32&) = default;
     TimeEsp32(TimeEsp32&&) = default;
 

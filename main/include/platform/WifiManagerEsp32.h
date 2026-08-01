@@ -8,12 +8,11 @@
 class WifiManagerEsp32 : public IWifiManager {
 public:
     WifiManagerEsp32() = default;
-    ~WifiManagerEsp32() noexcept override;
-
     WifiManagerEsp32(const WifiManagerEsp32&) = delete;
     WifiManagerEsp32& operator=(const WifiManagerEsp32&) = delete;
     WifiManagerEsp32(WifiManagerEsp32&&) = delete;
     WifiManagerEsp32& operator=(WifiManagerEsp32&&) = delete;
+    ~WifiManagerEsp32() noexcept override;
 
     /**
      * Connects to an access point using the given credentials

@@ -15,12 +15,8 @@ public:
     ValveGroup(const ITime& i_time) noexcept;
     ValveGroup(const ValveGroup &) = delete;
     ValveGroup(ValveGroup &&) noexcept;
-    ~ValveGroup() noexcept;
-
-    /**
-     * Move-assignment operator
-     */
     ValveGroup& operator=(ValveGroup&& other) noexcept;
+    ~ValveGroup() noexcept;
 
     /**
      * Will initialize all valves with a valid gpio pin

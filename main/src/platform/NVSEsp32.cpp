@@ -2,6 +2,14 @@
 #include "nvs_flash.h"
 #include <cstring>
 
+NVSEsp32::NVSEsp32(NVSEsp32&& other) noexcept :
+    isInitialized(other.isInitialized),
+    handle(other.handle)
+{
+    other.isInitialized = false;
+    other.handle = 0;
+}
+
 NVSEsp32::~NVSEsp32() noexcept {
     if (isInitialized) {
         NVSEsp32::free();

@@ -1,5 +1,19 @@
 #include "test/stubs/WifiManagerStub.h"
 
+WifiManagerStub::WifiManagerStub(WifiManagerStub&& other) noexcept :
+    state(other.state),
+    onConnected(std::move(other.onConnected)),
+    onDisconnected(std::move(other.onDisconnected)),
+    lastSsid(std::move(other.lastSsid)),
+    lastPassword(std::move(other.lastPassword)),
+    beginUserWifiCallCount(other.beginUserWifiCallCount),
+    beginOnboardingWifiCallCount(other.beginOnboardingWifiCallCount)
+{
+    other.state = WifiConnectionState::Disconnected;
+    other.beginUserWifiCallCount = 0;
+    other.beginOnboardingWifiCallCount = 0;
+}
+
 bool WifiManagerStub::beginUserWifi(const WifiCredentials& credentials) noexcept {
     lastSsid = credentials.ssid;
     lastPassword = credentials.password;

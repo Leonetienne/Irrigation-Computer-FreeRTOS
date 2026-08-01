@@ -5,6 +5,8 @@
 #include "platform/GpioEsp32.h"
 #include "driver/gpio.h"
 
+GpioEsp32::GpioEsp32(GpioEsp32&&) noexcept {}
+
 esp_err_t GpioEsp32::gpioResetPin(const gpio_num_t pinNum) noexcept {
     return gpio_reset_pin(pinNum);
 }

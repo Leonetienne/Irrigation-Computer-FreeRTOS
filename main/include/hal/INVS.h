@@ -11,6 +11,11 @@ constexpr std::size_t NVS_MAX_STRING_LENGTH = 64;
  */
 class INVS {
 public:
+    INVS() = default;
+    INVS(const INVS&) = delete;
+    INVS& operator=(const INVS&) = delete;
+    INVS(INVS&&) = delete;
+    INVS& operator=(INVS&&) = delete;
     virtual ~INVS() = default;
 
     /**

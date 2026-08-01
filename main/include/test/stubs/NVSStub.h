@@ -10,7 +10,7 @@ public:
     NVSStub() = default;
     NVSStub(const NVSStub&) = delete;
     NVSStub& operator=(const NVSStub&) = delete;
-    NVSStub(NVSStub&&) = delete;
+    NVSStub(NVSStub&&) noexcept;
     NVSStub& operator=(NVSStub&&) = delete;
 
     /**
