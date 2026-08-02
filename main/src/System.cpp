@@ -18,7 +18,7 @@ System::System() noexcept :
     nvs(),
     settings(nvs),
     wifiMan(),
-    valveGroup(time),
+    valveGroup(time, settings),
     httpServer(valveGroup, settings, stateMachine)
 { }
 
@@ -111,6 +111,8 @@ void System::beforeShutdown() noexcept {
 }
 
 void System::update() noexcept {
+    valveGroup.autoCloseValvesAfterTimeoutPoll();
+
     if (wifiConnectFailed) {
         wifiConnectFailed = false;
         ESP_LOGW(LOG_TAG, "wifi connect failed, falling back to onboarding ap");
@@ -131,6 +133,17 @@ void System::onWifiConnected() noexcept {
 void System::onWifiDisconnected() noexcept {
     ESP_LOGW(LOG_TAG, "wifi disconnected");
     stateMachine.setState(STATE::WAIT_WIFI_CONNECTION);
+
+    if (valveGroup.isReady()) {
+        if (settings.retrieveCutOnWifiLossEnabled().value_or(true)) {
+            for (std::size_t i = 0; i < 8; ++i) {
+                if (valveGroup.isValveOperable(i) && valveGroup.getValveOpenState(i)) {
+                    valveGroup.close(i);
+                }
+            }
+        }
+    }
+
     httpServer.free();
 }
 

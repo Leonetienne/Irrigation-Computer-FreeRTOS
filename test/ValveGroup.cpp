@@ -6,13 +6,18 @@
 #include "../main/include/GpioPinRegister.h"
 #include "test/stubs/GpioStub.h"
 #include "test/stubs/TimeStub.h"
+#include "test/stubs/NVSStub.h"
 #include "../main/include/Valve.h"
 #include "../main/include/ValveGroup.h"
+#include "../main/include/SettingsManager.h"
 
 TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
         Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
@@ -25,7 +30,7 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
         Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(timeStub);
+    ValveGroup group(timeStub, settings);
 
     SECTION("not initialized by default") {
         REQUIRE_FALSE(group.isReady());
@@ -156,7 +161,7 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
                 Valve(GPIO_NUM_14, gpioStub, timeStub, pr),
                 Valve(GPIO_NUM_15, gpioStub, timeStub, pr),
             };
-            ValveGroup scopedGroup(timeStub);
+            ValveGroup scopedGroup(timeStub, settings);
             REQUIRE(scopedGroup.initialize(std::move(scopedValves)));
             REQUIRE(scopedGroup.free());
         }
@@ -175,7 +180,7 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
                 Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
                 Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
             };
-            ValveGroup scopedGroup(timeStub);
+            ValveGroup scopedGroup(timeStub, settings);
             REQUIRE(scopedGroup.initialize(std::move(scopedValves)));
             REQUIRE(pr.isPinBound(GPIO_NUM_16));
         }
@@ -187,6 +192,9 @@ TEST_CASE("ValveGroup: each valve index maps to correct gpio pin", "[ValveGroup]
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
         Valve(GPIO_NUM_10, gpioStub, timeStub, pr),
@@ -199,7 +207,7 @@ TEST_CASE("ValveGroup: each valve index maps to correct gpio pin", "[ValveGroup]
         Valve(GPIO_NUM_17, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(timeStub);
+    ValveGroup group(timeStub, settings);
     REQUIRE(group.initialize(std::move(valves)));
 
     SECTION("open valve 0 only sets GPIO_NUM_10 HIGH") {
@@ -256,6 +264,9 @@ TEST_CASE("ValveGroup: initialize skips NC pins", "[ValveGroup]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
         Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
@@ -268,7 +279,7 @@ TEST_CASE("ValveGroup: initialize skips NC pins", "[ValveGroup]") {
         Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(timeStub);
+    ValveGroup group(timeStub, settings);
 
     SECTION("initialize succeeds with mixed valid and NC pins") {
         REQUIRE(group.initialize(std::move(valves)));
@@ -295,6 +306,9 @@ TEST_CASE("ValveGroup: move", "[ValveGroup]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
         Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
@@ -307,7 +321,7 @@ TEST_CASE("ValveGroup: move", "[ValveGroup]") {
         Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(timeStub);
+    ValveGroup group(timeStub, settings);
 
     SECTION("moved-from group reports not ready") {
         REQUIRE(group.initialize(std::move(valves)));
@@ -349,7 +363,7 @@ TEST_CASE("ValveGroup: move", "[ValveGroup]") {
             Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
             Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
         };
-        ValveGroup other(timeStub);
+        ValveGroup other(timeStub, settings);
         REQUIRE(other.initialize(std::move(otherValves)));
         REQUIRE(pr.isPinBound(GPIO_NUM_0));
         REQUIRE(pr.isPinBound(GPIO_NUM_20));
@@ -367,6 +381,9 @@ TEST_CASE("ValveGroup: auto close timeout", "[ValveGroup]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
         Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
@@ -379,7 +396,7 @@ TEST_CASE("ValveGroup: auto close timeout", "[ValveGroup]") {
         Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(timeStub);
+    ValveGroup group(timeStub, settings);
 
     SECTION("closes valves open longer than timeout") {
         REQUIRE(group.initialize(std::move(valves)));
@@ -414,6 +431,9 @@ TEST_CASE("ValveGroup: getValveOpenState", "[ValveGroup]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
         Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
@@ -426,7 +446,7 @@ TEST_CASE("ValveGroup: getValveOpenState", "[ValveGroup]") {
         Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(timeStub);
+    ValveGroup group(timeStub, settings);
 
     SECTION("returns error before init") {
         REQUIRE_FALSE(group.getValveOpenState(0).has_value());
@@ -452,5 +472,52 @@ TEST_CASE("ValveGroup: getValveOpenState", "[ValveGroup]") {
         REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.free());
         REQUIRE_FALSE(group.getValveOpenState(0).has_value());
+    }
+}
+
+TEST_CASE("ValveGroup: isValveOperable", "[ValveGroup]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+
+    std::array<Valve, 8> valves = {
+        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_2, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_4, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_6, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+    };
+
+    ValveGroup group(timeStub, settings);
+
+    SECTION("returns false before init") {
+        REQUIRE_FALSE(group.isValveOperable(0));
+    }
+
+    SECTION("returns true for a valve with a configured pin") {
+        REQUIRE(group.initialize(std::move(valves)));
+        REQUIRE(group.isValveOperable(0));
+    }
+
+    SECTION("returns false for a valve with no pin configured") {
+        REQUIRE(group.initialize(std::move(valves)));
+        REQUIRE_FALSE(group.isValveOperable(1));
+    }
+
+    SECTION("returns false for an out-of-bounds index") {
+        REQUIRE(group.initialize(std::move(valves)));
+        REQUIRE_FALSE(group.isValveOperable(8));
+    }
+
+    SECTION("returns false after free") {
+        REQUIRE(group.initialize(std::move(valves)));
+        REQUIRE(group.free());
+        REQUIRE_FALSE(group.isValveOperable(0));
     }
 }

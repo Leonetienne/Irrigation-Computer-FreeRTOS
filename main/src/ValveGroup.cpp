@@ -1,15 +1,18 @@
 #include "../include/ValveGroup.h"
 
 ValveGroup::ValveGroup(
-    const ITime &i_time
+    const ITime &i_time,
+    const SettingsManager &settings
     ) noexcept:
-    i_time(i_time)
+    i_time(i_time),
+    settings(settings)
 { }
 
 ValveGroup::ValveGroup(ValveGroup&& other) noexcept:
     isInitialized (other.isInitialized),
     valves (std::move(other.valves)),
-    i_time (std::move(other.i_time)) {
+    i_time (std::move(other.i_time)),
+    settings (std::move(other.settings)) {
     other.isInitialized = false;
 }
 
@@ -47,6 +50,9 @@ bool ValveGroup::initialize(std::array<Valve, 8> newValves) noexcept {
     if (isInitialized) {
         return false;
     }
+
+    settings_doValvesTimeout = settings.retrieveRuntimeSafetyEnabled().value_or(true);
+    settings_valveTimeoutSeconds = settings.retrieveMaxValveRuntime().value_or(300) * 60; // Convert minutes to seconds
 
     valves.emplace(std::move(newValves));
 
@@ -124,13 +130,12 @@ bool ValveGroup::setOpenState(std::size_t index, bool openState) noexcept {
 }
 
 bool ValveGroup::autoCloseValvesAfterTimeoutPoll() noexcept {
-    constexpr int NUM_SECONDS_TIMEOUT = 3600; // TODO: replace with nvs setting
-    if (isInitialized) {
+    if (isInitialized && settings_doValvesTimeout) {
         for (auto& valve : *valves) {
             if (
                 valve.isReady() &&
                 valve.getIsOpen().value_or(false) &&
-                i_time.getSecondsSince(valve.getLastOpenedAtTime()) >= NUM_SECONDS_TIMEOUT
+                i_time.getSecondsSince(valve.getLastOpenedAtTime()) >= settings_valveTimeoutSeconds
                 ) {
                 if (!valve.close()) {
                     return false;

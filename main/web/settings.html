@@ -47,12 +47,12 @@
         <input type="number" id="max_valve_runtime_min" name="max_valve_runtime_min" min="1" required>
         <p class="hint">A valve left on this long without a new command is force-shut as a failsafe.</p>
         <div class="check-row">
-            <input type="checkbox" id="disable_runtime_safety" name="disable_runtime_safety" value="1">
-            <label for="disable_runtime_safety" style="margin:0">Disable max-runtime failsafe</label>
+            <input type="checkbox" id="enable_runtime_safety" name="enable_runtime_safety" value="1" checked>
+            <label for="enable_runtime_safety" style="margin:0">Enable max-runtime failsafe</label>
         </div>
         <div class="check-row">
-            <input type="checkbox" id="disable_cut_on_wifi_loss" name="disable_cut_on_wifi_loss" value="1">
-            <label for="disable_cut_on_wifi_loss" style="margin:0">Disable shutoff on WiFi loss</label>
+            <input type="checkbox" id="enable_cut_on_wifi_loss" name="enable_cut_on_wifi_loss" value="1" checked>
+            <label for="enable_cut_on_wifi_loss" style="margin:0">Enable shutoff on WiFi loss</label>
         </div>
         <div class="check-row">
             <input type="checkbox" id="disable_cut_on_mqtt_loss" name="disable_cut_on_mqtt_loss" value="1" disabled="">
@@ -99,8 +99,8 @@ async function loadSettings() {
     document.getElementById('max_valve_runtime_min').value = values.max_valve_runtime_min || 30;
     document.getElementById('ssid').value = values.wifi_ssid || '';
     document.getElementById('password').placeholder = values.wifi_password_set === '1' ? 'leave blank to keep unchanged' : '';
-    document.getElementById('disable_runtime_safety').checked = values.runtime_safety_enabled === '0';
-    document.getElementById('disable_cut_on_wifi_loss').checked = values.cut_on_wifi_loss_enabled === '0';
+    document.getElementById('enable_runtime_safety').checked = values.runtime_safety_enabled !== '0';
+    document.getElementById('enable_cut_on_wifi_loss').checked = values.cut_on_wifi_loss_enabled !== '0';
 }
 
 document.getElementById('settings-form').addEventListener('submit', async (e) => {

@@ -13,54 +13,64 @@ TEST_CASE("ApiController: executeValveOperation", "[ApiController]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
         Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
         Valve(GPIO_NUM_1, gpioStub, timeStub, pr),
         Valve(GPIO_NUM_2, gpioStub, timeStub, pr),
         Valve(GPIO_NUM_3, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_4, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
         Valve(GPIO_NUM_5, gpioStub, timeStub, pr),
         Valve(GPIO_NUM_6, gpioStub, timeStub, pr),
         Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(timeStub);
+    ValveGroup group(timeStub, settings);
     REQUIRE(group.initialize(std::move(valves)));
 
     SECTION("Open opens the target valve") {
-        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{3, ValveAction::Open}));
+        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{3, ValveAction::Open}) == ValveOperationResult::Success);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
     SECTION("Close closes the target valve") {
-        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{3, ValveAction::Open}));
-        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{3, ValveAction::Close}));
+        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{3, ValveAction::Open}) == ValveOperationResult::Success);
+        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{3, ValveAction::Close}) == ValveOperationResult::Success);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("Open only affects the target valve") {
-        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{2, ValveAction::Open}));
+        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{2, ValveAction::Open}) == ValveOperationResult::Success);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_1) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
-    SECTION("fails for an out-of-bounds index") {
-        REQUIRE_FALSE(ApiController::executeValveOperation(group, ValveCommand{8, ValveAction::Open}));
+    SECTION("returns InvalidRequest for an out-of-bounds index") {
+        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{8, ValveAction::Open}) == ValveOperationResult::InvalidRequest);
+    }
+
+    SECTION("returns InvalidRequest for a valve with no gpio configured") {
+        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{4, ValveAction::Open}) == ValveOperationResult::InvalidRequest);
     }
 }
 
 TEST_CASE("ApiController: executeValveOperation before group init", "[ApiController]") {
     TimeStub timeStub{};
-    ValveGroup group(timeStub);
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+    ValveGroup group(timeStub, settings);
 
-    SECTION("Open fails") {
-        REQUIRE_FALSE(ApiController::executeValveOperation(group, ValveCommand{0, ValveAction::Open}));
+    SECTION("Open returns InvalidRequest") {
+        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{0, ValveAction::Open}) == ValveOperationResult::InvalidRequest);
     }
 
-    SECTION("Close fails") {
-        REQUIRE_FALSE(ApiController::executeValveOperation(group, ValveCommand{0, ValveAction::Close}));
+    SECTION("Close returns InvalidRequest") {
+        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{0, ValveAction::Close}) == ValveOperationResult::InvalidRequest);
     }
 }
 
@@ -116,10 +126,13 @@ TEST_CASE("ApiController: saveWifiCredentials", "[ApiController]") {
     }
 }
 
-TEST_CASE("ApiController: buildValveReport", "[ApiController]") {
+TEST_CASE("ApiController: buildValveStatusReport", "[ApiController]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
         Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
@@ -132,18 +145,49 @@ TEST_CASE("ApiController: buildValveReport", "[ApiController]") {
         Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
-    ValveGroup group(timeStub);
+    ValveGroup group(timeStub, settings);
     REQUIRE(group.initialize(std::move(valves)));
 
-    SECTION("lists all 8 valves, closed by default") {
-        const std::string report = ApiController::buildValveReport(group);
-        REQUIRE(report == "0:0\n1:0\n2:0\n3:0\n4:0\n5:0\n6:0\n7:0\n");
+    SECTION("lists only the configured valves, closed by default") {
+        REQUIRE(settings.storeNumValves(2));
+        const std::string report = ApiController::buildValveStatusReport(group, settings);
+        REQUIRE(report == "0:0\n1:0\n");
     }
 
     SECTION("reflects an open valve") {
-        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{1, ValveAction::Open}));
-        const std::string report = ApiController::buildValveReport(group);
-        REQUIRE(report == "0:0\n1:1\n2:0\n3:0\n4:0\n5:0\n6:0\n7:0\n");
+        REQUIRE(settings.storeNumValves(2));
+        REQUIRE(ApiController::executeValveOperation(group, ValveCommand{1, ValveAction::Open}) == ValveOperationResult::Success);
+        const std::string report = ApiController::buildValveStatusReport(group, settings);
+        REQUIRE(report == "0:0\n1:1\n");
+    }
+
+    SECTION("reports nothing when no valve count was stored") {
+        const std::string report = ApiController::buildValveStatusReport(group, settings);
+        REQUIRE(report.empty());
+    }
+}
+
+TEST_CASE("ApiController: buildValveConfigReport", "[ApiController]") {
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+
+    SECTION("reports num_valves=0 and nothing else when nothing was stored") {
+        REQUIRE(ApiController::buildValveConfigReport(settings) == "num_valves=0\n");
+    }
+
+    SECTION("reports only the configured valves' pins") {
+        REQUIRE(settings.storeNumValves(2));
+        REQUIRE(settings.storeValveActuatorGpioPins({
+            GPIO_NUM_13, GPIO_NUM_NC, GPIO_NUM_15, GPIO_NUM_16,
+            GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC,
+        }));
+        REQUIRE(ApiController::buildValveConfigReport(settings) == "num_valves=2\ngpio0=13\ngpio1=\n");
+    }
+
+    SECTION("reports blank pins when num_valves is set but no pins were stored") {
+        REQUIRE(settings.storeNumValves(2));
+        REQUIRE(ApiController::buildValveConfigReport(settings) == "num_valves=2\ngpio0=\ngpio1=\n");
     }
 }
 
@@ -187,26 +231,26 @@ TEST_CASE("ApiController: settings report/form", "[ApiController]") {
         REQUIRE(*settings.retrieveMaxValveRuntime() == 45);
     }
 
-    SECTION("applySettingsForm enables safety flags when their checkboxes are absent") {
+    SECTION("applySettingsForm disables safety flags when their checkboxes are absent") {
         const std::unordered_map<std::string, std::string> form = {
             {"device_name", "Garden"},
             {"max_valve_runtime_min", "45"},
-        };
-        REQUIRE(ApiController::applySettingsForm(settings, stateMachine, form));
-        REQUIRE(*settings.retrieveRuntimeSafetyEnabled());
-        REQUIRE(*settings.retrieveCutOnWifiLossEnabled());
-    }
-
-    SECTION("applySettingsForm disables safety flags when their checkboxes are present") {
-        const std::unordered_map<std::string, std::string> form = {
-            {"device_name", "Garden"},
-            {"max_valve_runtime_min", "45"},
-            {"disable_runtime_safety", "1"},
-            {"disable_cut_on_wifi_loss", "1"},
         };
         REQUIRE(ApiController::applySettingsForm(settings, stateMachine, form));
         REQUIRE_FALSE(*settings.retrieveRuntimeSafetyEnabled());
         REQUIRE_FALSE(*settings.retrieveCutOnWifiLossEnabled());
+    }
+
+    SECTION("applySettingsForm enables safety flags when their checkboxes are present") {
+        const std::unordered_map<std::string, std::string> form = {
+            {"device_name", "Garden"},
+            {"max_valve_runtime_min", "45"},
+            {"enable_runtime_safety", "1"},
+            {"enable_cut_on_wifi_loss", "1"},
+        };
+        REQUIRE(ApiController::applySettingsForm(settings, stateMachine, form));
+        REQUIRE(*settings.retrieveRuntimeSafetyEnabled());
+        REQUIRE(*settings.retrieveCutOnWifiLossEnabled());
     }
 
     SECTION("applySettingsForm requests a shutdown on success") {

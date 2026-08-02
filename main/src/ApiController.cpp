@@ -183,8 +183,8 @@ bool ApiController::applySettingsForm(
         return false;
     }
 
-    const bool runtimeSafetyEnabled = !form.contains("disable_runtime_safety");
-    const bool cutOnWifiLossEnabled = !form.contains("disable_cut_on_wifi_loss");
+    const bool runtimeSafetyEnabled = form.contains("enable_runtime_safety");
+    const bool cutOnWifiLossEnabled = form.contains("enable_cut_on_wifi_loss");
 
     if (!settings.storeTitle(nameIt->second) ||
         !settings.storeMaxValveRuntime(maxValveRuntime) ||

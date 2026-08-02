@@ -5,6 +5,7 @@
 #include <expected>
 #include <optional>
 #include "Valve.h"
+#include "SettingsManager.h"
 #include "hal/ITime.h"
 
 /**
@@ -12,7 +13,7 @@
  */
 class ValveGroup {
 public:
-    ValveGroup(const ITime& i_time) noexcept;
+    ValveGroup(const ITime& i_time, const SettingsManager& settings) noexcept;
     ValveGroup(const ValveGroup &) = delete;
     ValveGroup(ValveGroup &&) noexcept;
     ValveGroup& operator=(ValveGroup&& other) noexcept;
@@ -85,6 +86,9 @@ private:
     // Optional to allow empty initialization in ctor, and create after reading NVS
     std::optional<std::array<Valve, 8>> valves;
     const ITime& i_time;
+    const SettingsManager& settings;
+    bool settings_doValvesTimeout = true;
+    int32_t settings_valveTimeoutSeconds = 3600;
 };
 
 
