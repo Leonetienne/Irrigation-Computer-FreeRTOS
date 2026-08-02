@@ -398,7 +398,10 @@ TEST_CASE("ValveGroup: auto close timeout", "[ValveGroup]") {
 
     ValveGroup group(timeStub, settings);
 
-    SECTION("closes valves open longer than timeout") {
+    SECTION("closes valves open longer than the configured timeout") {
+        REQUIRE(settings.storeRuntimeSafetyEnabled(true));
+        REQUIRE(settings.storeMaxValveRuntime(60)); // minutes -> 3600s
+
         REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.open(0));
         REQUIRE(group.open(3));
@@ -411,7 +414,10 @@ TEST_CASE("ValveGroup: auto close timeout", "[ValveGroup]") {
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
-    SECTION("does not close valves under the timeout") {
+    SECTION("does not close valves under the configured timeout") {
+        REQUIRE(settings.storeRuntimeSafetyEnabled(true));
+        REQUIRE(settings.storeMaxValveRuntime(60)); // minutes -> 3600s
+
         REQUIRE(group.initialize(std::move(valves)));
         REQUIRE(group.open(0));
 
@@ -420,6 +426,48 @@ TEST_CASE("ValveGroup: auto close timeout", "[ValveGroup]") {
         REQUIRE(group.autoCloseValvesAfterTimeoutPoll());
 
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_0) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("respects a shorter configured timeout") {
+        REQUIRE(settings.storeRuntimeSafetyEnabled(true));
+        REQUIRE(settings.storeMaxValveRuntime(1)); // minutes -> 60s
+
+        REQUIRE(group.initialize(std::move(valves)));
+        REQUIRE(group.open(0));
+
+        timeStub.setStubbedTime(timeStub.getTime() + 59);
+        REQUIRE(group.autoCloseValvesAfterTimeoutPoll());
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_0) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        timeStub.setStubbedTime(timeStub.getTime() + 2);
+        REQUIRE(group.autoCloseValvesAfterTimeoutPoll());
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_0) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("does not close valves when runtime safety is disabled") {
+        REQUIRE(settings.storeRuntimeSafetyEnabled(false));
+        REQUIRE(settings.storeMaxValveRuntime(1)); // minutes -> 60s, would otherwise trigger
+
+        REQUIRE(group.initialize(std::move(valves)));
+        REQUIRE(group.open(0));
+
+        timeStub.setStubbedTime(timeStub.getTime() + 3600);
+
+        group.autoCloseValvesAfterTimeoutPoll();
+
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_0) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("defaults to enabled when nothing was stored") {
+        REQUIRE(settings.storeMaxValveRuntime(1)); // minutes -> 60s
+
+        REQUIRE(group.initialize(std::move(valves)));
+        REQUIRE(group.open(0));
+
+        timeStub.setStubbedTime(timeStub.getTime() + 61);
+        REQUIRE(group.autoCloseValvesAfterTimeoutPoll());
+
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_0) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("returns false before init") {
