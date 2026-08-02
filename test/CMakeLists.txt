@@ -25,6 +25,7 @@ add_executable(irrigation_computer_tests
         StateMachine.cpp
         SettingsManager.cpp
         UrlEncodedForm.cpp
+        System.cpp
 
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/GpioPinRegister.cpp
@@ -59,6 +60,13 @@ add_executable(irrigation_computer_tests
         ../main/src/SettingsManager.cpp
         ../main/include/UrlEncodedForm.h
         ../main/src/UrlEncodedForm.cpp
+        ../main/include/hal/IHttpServer.h
+        ../main/include/test/stubs/HttpServerStub.h
+        ../main/src/test/stubs/HttpServerStub.cpp
+        ../main/include/test/stubs/SystemStub.h
+        ../main/src/test/stubs/SystemStub.cpp
+        ../main/include/System.h
+        ../main/src/System.cpp
         WifiManagerStub.cpp
 )
 
