@@ -7,20 +7,35 @@
 
 #include "GpioPinRegister.h"
 #include "StateMachine.h"
-#include "platform/GpioEsp32.h"
-#include "platform/TimeEsp32.h"
-#include "platform/WifiManagerEsp32.h"
-#include "platform/HttpServerEsp32.h"
-#include "platform/NVSEsp32.h"
 #include "SettingsManager.h"
 #include "ValveGroup.h"
+#include "hal/IGpio.h"
+#include "hal/ITime.h"
+#include "hal/INVS.h"
+#include "hal/IWifiManager.h"
+#include "hal/IHttpServer.h"
 
 /**
- * System entrypoint and main runtime
+ * System entrypoint and main runtime.
+ *
+ * Depends only on interfaces (plus the portable, non-hardware logic classes),
+ * so it can be run against either the esp32 platform implementations
+ * (see SystemEsp32::getSystem()) or host-side test stubs (see
+ * SystemStub::getSystem() / test/System.cpp).
  */
 class System {
 public:
-    System() noexcept;
+    System(
+        StateMachine& stateMachine,
+        GpioPinRegister& gpioPinRegister,
+        IGpio& gpio,
+        ITime& i_time,
+        INVS& nvs,
+        SettingsManager& settings,
+        IWifiManager& wifiMan,
+        ValveGroup& valveGroup,
+        IHttpServer& httpServer
+    ) noexcept;
     System(const System&) = delete;
     System& operator=(const System&) = delete;
     System(System&&) = delete;
@@ -35,9 +50,14 @@ public:
      */
     bool free() noexcept;
 
+    /**
+     * Processes one iteration of runtime work (valve timeout polling, deferred
+     * wifi-failure fallback, ...). Called repeatedly by loop().
+     */
+    void update() noexcept;
+
 private:
     void beforeShutdown() noexcept;
-    void update() noexcept;
 
     /**
      * Called by wifiMan once a connection is established (IP obtained).
@@ -57,15 +77,15 @@ private:
 
     bool isInitialized = false;
     bool wifiConnectFailed = false;
-    StateMachine stateMachine;
-    GpioPinRegister gpioPinRegister;
-    GpioEsp32 gpio;
-    TimeEsp32 time;
-    NVSEsp32 nvs;
-    SettingsManager settings;
-    WifiManagerEsp32 wifiMan;
-    ValveGroup valveGroup;
-    HttpServerEsp32 httpServer;
+    StateMachine& stateMachine;
+    GpioPinRegister& gpioPinRegister;
+    IGpio& gpio;
+    ITime& i_time;
+    INVS& nvs;
+    SettingsManager& settings;
+    IWifiManager& wifiMan;
+    ValveGroup& valveGroup;
+    IHttpServer& httpServer;
 };
 
 

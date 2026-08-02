@@ -9,6 +9,7 @@ idf_component_register(SRCS
                        "src/platform/NVSEsp32.cpp"
                        "src/platform/HttpServerEsp32.cpp"
                        "src/platform/GpioDigitalWritePin.cpp"
+                       "src/platform/SystemEsp32.cpp"
                        "src/Valve.cpp"
                        "src/ValveGroup.cpp"
                        "src/ApiRouteParser.cpp"

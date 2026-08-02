@@ -3,23 +3,35 @@
 //
 
 #include "System.h"
-#include <esp_log.h>
+#include "compat/esp_log_macros.h"
 #include <array>
+#ifndef HOST_BUILD
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#endif
 
 static const char* LOG_TAG = "System";
 
-System::System() noexcept :
-    stateMachine(),
-    gpioPinRegister(),
-    gpio(),
-    time(),
-    nvs(),
-    settings(nvs),
-    wifiMan(),
-    valveGroup(time, settings),
-    httpServer(valveGroup, settings, stateMachine)
+System::System(
+    StateMachine& stateMachine,
+    GpioPinRegister& gpioPinRegister,
+    IGpio& gpio,
+    ITime& i_time,
+    INVS& nvs,
+    SettingsManager& settings,
+    IWifiManager& wifiMan,
+    ValveGroup& valveGroup,
+    IHttpServer& httpServer
+) noexcept :
+    stateMachine(stateMachine),
+    gpioPinRegister(gpioPinRegister),
+    gpio(gpio),
+    i_time(i_time),
+    nvs(nvs),
+    settings(settings),
+    wifiMan(wifiMan),
+    valveGroup(valveGroup),
+    httpServer(httpServer)
 { }
 
 System::~System() noexcept {
@@ -62,14 +74,14 @@ void System::init() noexcept {
     }
 
     valveGroup.initialize({
-        Valve(valvePins[0], gpio, time, gpioPinRegister),
-        Valve(valvePins[1], gpio, time, gpioPinRegister),
-        Valve(valvePins[2], gpio, time, gpioPinRegister),
-        Valve(valvePins[3], gpio, time, gpioPinRegister),
-        Valve(valvePins[4], gpio, time, gpioPinRegister),
-        Valve(valvePins[5], gpio, time, gpioPinRegister),
-        Valve(valvePins[6], gpio, time, gpioPinRegister),
-        Valve(valvePins[7], gpio, time, gpioPinRegister)
+        Valve(valvePins[0], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[1], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[2], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[3], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[4], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[5], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[6], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[7], gpio, i_time, gpioPinRegister)
     });
 
     isInitialized = true;
@@ -78,7 +90,9 @@ void System::init() noexcept {
 void System::loop() noexcept {
     while (stateMachine.getState() != STATE::SHUTTING_DOWN) {
         update();
+#ifndef HOST_BUILD
         vTaskDelay(pdMS_TO_TICKS(10));
+#endif
     }
     beforeShutdown();
 }

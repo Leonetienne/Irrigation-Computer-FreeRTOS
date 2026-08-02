@@ -5,30 +5,31 @@
 #include "ValveGroup.h"
 #include "SettingsManager.h"
 #include "StateMachine.h"
+#include "hal/IHttpServer.h"
 
 /**
  * Esp32-Implementation of the web ui / api http server.
  */
-class HttpServerEsp32 {
+class HttpServerEsp32 : public IHttpServer {
 public:
     HttpServerEsp32(ValveGroup& valveGroup, SettingsManager& settings, StateMachine& stateMachine) noexcept;
     HttpServerEsp32(const HttpServerEsp32&) = delete;
     HttpServerEsp32& operator=(const HttpServerEsp32&) = delete;
     HttpServerEsp32(HttpServerEsp32&&) = delete;
     HttpServerEsp32& operator=(HttpServerEsp32&&) = delete;
-    ~HttpServerEsp32() noexcept;
+    ~HttpServerEsp32() noexcept override;
 
     /**
      * Starts the http server and registers all uri handlers
      * @return Success state
      */
-    bool begin() noexcept;
+    bool begin() noexcept override;
 
     /**
      * Stops the http server and releases the resources acquired by begin()
      * @return Success state
      */
-    bool free() noexcept;
+    bool free() noexcept override;
 
 private:
     /**
