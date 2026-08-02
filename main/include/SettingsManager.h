@@ -55,6 +55,18 @@ public:
      */
     [[nodiscard]] std::expected<std::array<gpio_num_t, 8>, bool> retrieveValveActuatorGpioPins() const noexcept;
 
+    /**
+     * @return Success state
+     */
+    bool storeRuntimeSafetyEnabled(bool enabled) const noexcept;
+    [[nodiscard]] std::expected<bool, bool> retrieveRuntimeSafetyEnabled() const noexcept;
+
+    /**
+     * @return Success state
+     */
+    bool storeCutOnWifiLossEnabled(bool enabled) const noexcept;
+    [[nodiscard]] std::expected<bool, bool> retrieveCutOnWifiLossEnabled() const noexcept;
+
 private:
     INVS& i_nvs;
 };

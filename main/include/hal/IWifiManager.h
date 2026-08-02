@@ -51,6 +51,14 @@ public:
      * @param callback
      */
     virtual void setOnDisconnected(std::function<void()> callback) noexcept = 0;
+
+    /**
+     * Callback setter. Fired once connecting to the configured access point has
+     * repeatedly failed (e.g. wrong credentials) and no further automatic retries
+     * will be made.
+     * @param callback
+     */
+    virtual void setOnFailed(std::function<void()> callback) noexcept = 0;
 };
 
 #endif //IRRIGATION_COMPUTER_TESTS_IWIFIMANAGERS_H

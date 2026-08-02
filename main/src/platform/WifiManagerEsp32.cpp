@@ -20,6 +20,8 @@ bool WifiManagerEsp32::beginUserWifi(const WifiCredentials& credentials) noexcep
         return false;
     }
 
+    connectFailureCount = 0;
+
     if (esp_netif_init() != ESP_OK) {
         return false;
     }
@@ -177,6 +179,7 @@ bool WifiManagerEsp32::free() noexcept {
     isInitialized = false;
     eventHandlersRegistered = false;
     state = WifiConnectionState::Disconnected;
+    connectFailureCount = 0;
 
     return success;
 }
@@ -191,6 +194,10 @@ void WifiManagerEsp32::setOnConnected(std::function<void()> callback) noexcept {
 
 void WifiManagerEsp32::setOnDisconnected(std::function<void()> callback) noexcept {
     onDisconnected = std::move(callback);
+}
+
+void WifiManagerEsp32::setOnFailed(std::function<void()> callback) noexcept {
+    onFailed = std::move(callback);
 }
 
 void WifiManagerEsp32::eventHandler(
@@ -208,16 +215,36 @@ void WifiManagerEsp32::eventHandler(
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
         const bool wasConnected = self->state == WifiConnectionState::Connected;
 
-        self->state = WifiConnectionState::Connecting;
-        ESP_LOGW(LOG_TAG, "disconnected, retrying");
-        esp_wifi_connect(); // Immediate non-blocking retry
+        if (wasConnected) {
+            // was connected before, then dropped out - keep retrying indefinitely
+            self->connectFailureCount = 0;
+            self->state = WifiConnectionState::Connecting;
+            ESP_LOGW(LOG_TAG, "disconnected, retrying");
+            esp_wifi_connect();
 
-        if (wasConnected && self->onDisconnected) {
-            self->onDisconnected();
+            if (self->onDisconnected) {
+                self->onDisconnected();
+            }
+            return;
+        }
+
+        ++self->connectFailureCount;
+        if (self->connectFailureCount >= MAX_CONNECT_RETRIES) {
+            ESP_LOGW(LOG_TAG, "giving up after %d failed connection attempts", self->connectFailureCount);
+            self->state = WifiConnectionState::Failed;
+
+            if (self->onFailed) {
+                self->onFailed();
+            }
+        } else {
+            self->state = WifiConnectionState::Connecting;
+            ESP_LOGW(LOG_TAG, "connect failed, retrying (%d/%d)", self->connectFailureCount, MAX_CONNECT_RETRIES);
+            esp_wifi_connect();
         }
 
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         self->state = WifiConnectionState::Connected;
+        self->connectFailureCount = 0;
         const auto* event = static_cast<ip_event_got_ip_t*>(data);
         ESP_LOGI(LOG_TAG, "connected, got ip: " IPSTR, IP2STR(&event->ip_info.ip));
 

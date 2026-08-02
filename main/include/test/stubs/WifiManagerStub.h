@@ -48,10 +48,17 @@ public:
     void setOnDisconnected(std::function<void()> callback) noexcept override;
 
     /**
-     * fires callbacks, simulates a real connect/disconnect event
+     * Callback setter
+     * @param callback
+     */
+    void setOnFailed(std::function<void()> callback) noexcept override;
+
+    /**
+     * fires callbacks, simulates a real connect/disconnect/failure event
      */
     void simulateConnected();
     void simulateDisconnected();
+    void simulateFailed();
 
     /**
      *
@@ -68,6 +75,7 @@ private:
     WifiConnectionState state = WifiConnectionState::Disconnected;
     std::function<void()> onConnected;
     std::function<void()> onDisconnected;
+    std::function<void()> onFailed;
 
     std::string lastSsid;
     std::string lastPassword;

@@ -4,6 +4,7 @@
 
 #include "System.h"
 #include <esp_log.h>
+#include <array>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -35,27 +36,40 @@ void System::init() noexcept {
 
     wifiMan.setOnConnected([this]() { onWifiConnected(); });
     wifiMan.setOnDisconnected([this]() { onWifiDisconnected(); });
+    wifiMan.setOnFailed([this]() { onWifiFailed(); });
 
     const auto storedCredentials = settings.retrieveWifiCredentials();
 
     if (storedCredentials.has_value()) {
+        stateMachine.setState(STATE::WAIT_WIFI_CONNECTION);
         wifiMan.beginUserWifi(*storedCredentials);
     } else {
         // ap comes up immediately, no ip event to wait for
+        stateMachine.setState(STATE::WIFI_ONBOARDING);
         wifiMan.beginOnboardingWifi();
         httpServer.begin();
     }
 
-    // Load valves (four valves active, four inactive)
+    // no valve is wired up until the user configures count/pins via the advanced settings page
+    const int32_t numValves = settings.retrieveNumValves().value_or(0);
+    const auto configuredPins = settings.retrieveValveActuatorGpioPins();
+
+    std::array<gpio_num_t, 8> valvePins{};
+    for (std::size_t i = 0; i < valvePins.size(); ++i) {
+        valvePins[i] = configuredPins.has_value() && static_cast<int32_t>(i) < numValves
+            ? (*configuredPins)[i]
+            : GPIO_NUM_NC;
+    }
+
     valveGroup.initialize({
-        Valve(GPIO_NUM_13, gpio, time, gpioPinRegister),
-        Valve(GPIO_NUM_14, gpio, time, gpioPinRegister),
-        Valve(GPIO_NUM_15, gpio, time, gpioPinRegister),
-        Valve(GPIO_NUM_16, gpio, time, gpioPinRegister),
-        Valve(GPIO_NUM_NC, gpio, time, gpioPinRegister),
-        Valve(GPIO_NUM_NC, gpio, time, gpioPinRegister),
-        Valve(GPIO_NUM_NC, gpio, time, gpioPinRegister),
-        Valve(GPIO_NUM_NC, gpio, time, gpioPinRegister)
+        Valve(valvePins[0], gpio, time, gpioPinRegister),
+        Valve(valvePins[1], gpio, time, gpioPinRegister),
+        Valve(valvePins[2], gpio, time, gpioPinRegister),
+        Valve(valvePins[3], gpio, time, gpioPinRegister),
+        Valve(valvePins[4], gpio, time, gpioPinRegister),
+        Valve(valvePins[5], gpio, time, gpioPinRegister),
+        Valve(valvePins[6], gpio, time, gpioPinRegister),
+        Valve(valvePins[7], gpio, time, gpioPinRegister)
     });
 
     isInitialized = true;
@@ -97,14 +111,30 @@ void System::beforeShutdown() noexcept {
 }
 
 void System::update() noexcept {
+    if (wifiConnectFailed) {
+        wifiConnectFailed = false;
+        ESP_LOGW(LOG_TAG, "wifi connect failed, falling back to onboarding ap");
+        httpServer.free();
+        wifiMan.free();
+        wifiMan.beginOnboardingWifi();
+        httpServer.begin();
+        stateMachine.setState(STATE::WIFI_ONBOARDING);
+    }
 }
 
 void System::onWifiConnected() noexcept {
     ESP_LOGI(LOG_TAG, "wifi connected");
+    stateMachine.setState(STATE::OPERATIONAL);
     httpServer.begin();
 }
 
 void System::onWifiDisconnected() noexcept {
     ESP_LOGW(LOG_TAG, "wifi disconnected");
+    stateMachine.setState(STATE::WAIT_WIFI_CONNECTION);
     httpServer.free();
+}
+
+void System::onWifiFailed() noexcept {
+    // deferred to update(): must not tear down/rebuild wifi from within its own event callback
+    wifiConnectFailed = true;
 }

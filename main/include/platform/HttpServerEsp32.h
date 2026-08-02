@@ -32,20 +32,39 @@ public:
 
 private:
     /**
-     * Serves the embedded web ui (index.html)
+     * Serves the embedded index page
      */
-    static esp_err_t handleGetFile(httpd_req_t* req) noexcept;
+    static esp_err_t handleGetIndex(httpd_req_t* req) noexcept;
+
+    /**
+     * Serves the embedded stylesheet
+     */
+    static esp_err_t handleGetStyle(httpd_req_t* req) noexcept;
+
+    /**
+     * Serves the embedded settings page
+     */
+    static esp_err_t handleGetSettingsPage(httpd_req_t* req) noexcept;
+
+    /**
+     * Serves the embedded advanced settings page
+     */
+    static esp_err_t handleGetAdvancedPage(httpd_req_t* req) noexcept;
 
     /**
      * Routes GET /api/ requests
-     * TODO: no GET api routes defined yet
      */
     static esp_err_t handleGetApi(httpd_req_t* req) noexcept;
 
     /**
      * Routes POST /api/ requests
      */
-    static esp_err_t handlePost(httpd_req_t* req) noexcept;
+    static esp_err_t handlePostApi(httpd_req_t* req) noexcept;
+
+    /**
+     * Routes POST /settings* requests
+     */
+    static esp_err_t handlePostSettings(httpd_req_t* req) noexcept;
 
     /**
      * Parses and dispatches a valve command
@@ -56,6 +75,16 @@ private:
      * Saves wifi credentials submitted via the web ui and requests a shutdown
      */
     static esp_err_t handleWifiCredentials(httpd_req_t* req) noexcept;
+
+    /**
+     * Saves the settings form submitted via the web ui and requests a shutdown
+     */
+    static esp_err_t handleSettingsForm(httpd_req_t* req) noexcept;
+
+    /**
+     * Saves the advanced settings form submitted via the web ui and requests a shutdown
+     */
+    static esp_err_t handleAdvancedSettingsForm(httpd_req_t* req) noexcept;
 
     bool isInitialized = false;
     httpd_handle_t server = nullptr;

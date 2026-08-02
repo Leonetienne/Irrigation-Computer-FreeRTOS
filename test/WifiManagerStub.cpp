@@ -65,4 +65,16 @@ TEST_CASE("WifiManagerStub", "[WifiManagerStub]") {
         stub.forceState(WifiConnectionState::Failed);
         REQUIRE(stub.getState() == WifiConnectionState::Failed);
     }
+
+    SECTION("simulateFailed sets state to Failed") {
+        stub.simulateFailed();
+        REQUIRE(stub.getState() == WifiConnectionState::Failed);
+    }
+
+    SECTION("simulateFailed fires the onFailed callback") {
+        bool called = false;
+        stub.setOnFailed([&called]() { called = true; });
+        stub.simulateFailed();
+        REQUIRE(called);
+    }
 }

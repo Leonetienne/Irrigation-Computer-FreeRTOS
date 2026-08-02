@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>Settings</h1>
+            <p class="subtitle" id="device-name"></p>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <a href="/">Valves</a>
+        <a href="/settings" class="active">Settings</a>
+        <a href="/settings/advanced">Advanced</a>
+    </nav>
+
+    <div id="status" class="status-msg"></div>
+
+    <form class="card" id="settings-form">
+        <h2>Device</h2>
+        <label for="device_name">Device name</label>
+        <input type="text" id="device_name" name="device_name" maxlength="31" required>
+
+        <h2 style="margin-top:1.4rem">MQTT</h2>
+        <p class="hint">Not wired up yet.</p>
+        <label for="mqtt_uri">Broker URI</label>
+        <input type="text" id="mqtt_uri" name="mqtt_uri" placeholder="mqtt://192.168.0.10:1883" maxlength="63" disabled="">
+
+        <label for="mqtt_user">Username</label>
+        <input type="text" id="mqtt_user" name="mqtt_user" maxlength="31" disabled="">
+
+        <label for="mqtt_pass">Password</label>
+        <input type="password" id="mqtt_pass" name="mqtt_pass" placeholder="leave blank to keep unchanged" disabled="">
+
+        <label for="node_id">Discovery node ID</label>
+        <input type="text" id="node_id" name="node_id" maxlength="31" disabled="">
+
+        <h2 style="margin-top:1.4rem">Safety</h2>
+        <label for="max_valve_runtime_min">Max valve runtime (minutes)</label>
+        <input type="number" id="max_valve_runtime_min" name="max_valve_runtime_min" min="1" required>
+        <p class="hint">A valve left on this long without a new command is force-shut as a failsafe.</p>
+        <div class="check-row">
+            <input type="checkbox" id="disable_runtime_safety" name="disable_runtime_safety" value="1">
+            <label for="disable_runtime_safety" style="margin:0">Disable max-runtime failsafe</label>
+        </div>
+        <div class="check-row">
+            <input type="checkbox" id="disable_cut_on_wifi_loss" name="disable_cut_on_wifi_loss" value="1">
+            <label for="disable_cut_on_wifi_loss" style="margin:0">Disable shutoff on WiFi loss</label>
+        </div>
+        <div class="check-row">
+            <input type="checkbox" id="disable_cut_on_mqtt_loss" name="disable_cut_on_mqtt_loss" value="1" disabled="">
+            <label for="disable_cut_on_mqtt_loss" style="margin:0">Disable shutoff on MQTT loss</label>
+        </div>
+
+        <h2 style="margin-top:1.4rem">Web interface</h2>
+        <label for="web_password">Password protection (optional)</label>
+        <input type="password" id="web_password" name="web_password" placeholder="not implemented yet" disabled="">
+        <div class="check-row">
+            <input type="checkbox" id="disable_web_password" name="disable_web_password" value="1" disabled="">
+            <label for="disable_web_password" style="margin:0">Disable password protection</label>
+        </div>
+
+        <button type="submit">Save &amp; restart</button>
+    </form>
+
+    <form class="card" id="wifi-form">
+        <h2>WiFi</h2>
+        <label for="ssid">SSID</label>
+        <input type="text" id="ssid" name="ssid" maxlength="31" required>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password">
+        <p class="hint">If the device can't connect with these credentials, it falls back to its onboarding access point.</p>
+
+        <button type="submit">Save &amp; restart</button>
+    </form>
+</div>
+
+<script>
+async function loadSettings() {
+    const res = await fetch('/api/settings');
+    const text = await res.text();
+    const values = {};
+    text.trim().split('\n').filter(Boolean).forEach(line => {
+        const i = line.indexOf('=');
+        values[line.slice(0, i)] = line.slice(i + 1);
+    });
+    const name = values.device_name || '';
+    document.title = name ? name + ' - Settings' : 'Settings';
+    document.getElementById('device-name').textContent = name;
+    document.getElementById('device_name').value = name;
+    document.getElementById('max_valve_runtime_min').value = values.max_valve_runtime_min || 30;
+    document.getElementById('ssid').value = values.wifi_ssid || '';
+    document.getElementById('password').placeholder = values.wifi_password_set === '1' ? 'leave blank to keep unchanged' : '';
+    document.getElementById('disable_runtime_safety').checked = values.runtime_safety_enabled === '0';
+    document.getElementById('disable_cut_on_wifi_loss').checked = values.cut_on_wifi_loss_enabled === '0';
+}
+
+document.getElementById('settings-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = document.getElementById('status');
+    status.className = 'status-msg show';
+    status.textContent = 'Saving & restarting…';
+    await fetch('/settings', { method: 'POST', body: new URLSearchParams(new FormData(e.target)) });
+    status.textContent = 'Saved. The device is restarting -- reload the page in a few seconds.';
+});
+
+document.getElementById('wifi-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = document.getElementById('status');
+    status.className = 'status-msg show';
+    status.textContent = 'Saving & restarting…';
+    await fetch('/api/wifi', { method: 'POST', body: new URLSearchParams(new FormData(e.target)) });
+    status.textContent = 'Saved. The device is restarting -- reload the page in a few seconds.';
+});
+
+loadSettings();
+</script>
+</body>
+</html>

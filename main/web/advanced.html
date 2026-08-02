@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Advanced</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>Advanced</h1>
+            <p class="subtitle" id="device-name"></p>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <a href="/">Valves</a>
+        <a href="/settings">Settings</a>
+        <a href="/settings/advanced" class="active">Advanced</a>
+    </nav>
+
+    <div id="status" class="status-msg"></div>
+
+    <form class="card" id="gpio-form">
+        <h2>Valve count</h2>
+        <label for="num_valves">Number of valves</label>
+        <input type="number" id="num_valves" name="num_valves" min="1" max="8" required>
+
+        <h2 style="margin-top:1.4rem">Valve GPIOs</h2>
+        <p class="hint">ESP32 GPIO number per valve output. Blank until wired up. Takes effect after restart.</p>
+        <div id="valve-gpio-fields"></div>
+
+        <h2 style="margin-top:1.4rem">Status LEDs</h2>
+        <p class="hint">Not wired up yet.</p>
+
+        <div class="check-row">
+            <input type="checkbox" id="disable_conn_leds" name="disable_conn_leds" value="1" disabled="">
+            <label for="disable_conn_leds" style="margin:0">Disable connectivity status LEDs (WiFi/MQTT)</label>
+        </div>
+        <div class="check-row">
+            <input type="checkbox" id="disable_valve_leds" name="disable_valve_leds" value="1" disabled="">
+            <label for="disable_valve_leds" style="margin:0">Disable valve status LEDs</label>
+        </div>
+
+        <label for="wifi_led_gpio">WiFi OK LED - GPIO</label>
+        <input type="number" id="wifi_led_gpio" name="wifi_led_gpio" min="0" max="39" placeholder="not set" disabled="">
+        <label for="mqtt_led_gpio">MQTT OK LED - GPIO</label>
+        <input type="number" id="mqtt_led_gpio" name="mqtt_led_gpio" min="0" max="39" placeholder="not set" disabled="">
+        <label for="valve_led_gpio0">Valve 0 status LED - GPIO</label>
+        <input type="number" id="valve_led_gpio0" name="valve_led_gpio0" min="0" max="39" placeholder="not set" disabled="">
+        <label for="valve_led_gpio1">Valve 1 status LED - GPIO</label>
+        <input type="number" id="valve_led_gpio1" name="valve_led_gpio1" min="0" max="39" placeholder="not set" disabled="">
+        <label for="valve_led_gpio2">Valve 2 status LED - GPIO</label>
+        <input type="number" id="valve_led_gpio2" name="valve_led_gpio2" min="0" max="39" placeholder="not set" disabled="">
+        <label for="valve_led_gpio3">Valve 3 status LED - GPIO</label>
+        <input type="number" id="valve_led_gpio3" name="valve_led_gpio3" min="0" max="39" placeholder="not set" disabled="">
+        <label for="valve_led_gpio4">Valve 4 status LED - GPIO</label>
+        <input type="number" id="valve_led_gpio4" name="valve_led_gpio4" min="0" max="39" placeholder="not set" disabled="">
+        <label for="valve_led_gpio5">Valve 5 status LED - GPIO</label>
+        <input type="number" id="valve_led_gpio5" name="valve_led_gpio5" min="0" max="39" placeholder="not set" disabled="">
+        <label for="valve_led_gpio6">Valve 6 status LED - GPIO</label>
+        <input type="number" id="valve_led_gpio6" name="valve_led_gpio6" min="0" max="39" placeholder="not set" disabled="">
+        <label for="valve_led_gpio7">Valve 7 status LED - GPIO</label>
+        <input type="number" id="valve_led_gpio7" name="valve_led_gpio7" min="0" max="39" placeholder="not set" disabled="">
+
+        <button type="submit">Save &amp; restart</button>
+    </form>
+</div>
+
+<script>
+async function loadDeviceName() {
+    const res = await fetch('/api/settings');
+    const text = await res.text();
+    const values = {};
+    text.trim().split('\n').filter(Boolean).forEach(line => {
+        const i = line.indexOf('=');
+        values[line.slice(0, i)] = line.slice(i + 1);
+    });
+    const name = values.device_name || '';
+    document.title = name ? name + ' - Advanced' : 'Advanced';
+    document.getElementById('device-name').textContent = name;
+}
+
+function addGpioField(container, key, label, value, disabled) {
+    const labelEl = document.createElement('label');
+    labelEl.setAttribute('for', key);
+    labelEl.textContent = label;
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.id = key;
+    input.name = key;
+    input.min = '0';
+    input.max = '39';
+    input.value = value;
+    input.placeholder = 'not set';
+    input.disabled = disabled;
+
+    container.appendChild(labelEl);
+    container.appendChild(input);
+}
+
+async function loadAdvanced() {
+    const res = await fetch('/api/settings/advanced');
+    const text = await res.text();
+    const valveFields = document.getElementById('valve-gpio-fields');
+    valveFields.innerHTML = '';
+
+    let numValves = 0;
+
+    text.trim().split('\n').forEach(line => {
+        const i = line.indexOf('=');
+        if (i < 0) return;
+        const key = line.slice(0, i);
+        const value = line.slice(i + 1);
+
+        let match;
+        if (key === 'num_valves') {
+            numValves = Number(value) || 0;
+            document.getElementById('num_valves').value = value;
+        } else if ((match = key.match(/^gpio(\d+)$/))) {
+            addGpioField(valveFields, key, 'Valve ' + match[1] + ' - GPIO', value, Number(match[1]) >= numValves);
+        }
+    });
+}
+
+document.getElementById('gpio-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = document.getElementById('status');
+    status.className = 'status-msg show';
+    status.textContent = 'Saving & restarting…';
+    await fetch('/settings/advanced', { method: 'POST', body: new URLSearchParams(new FormData(e.target)) });
+    status.textContent = 'Saved. The device is restarting -- reload the page in a few seconds.';
+});
+
+loadDeviceName();
+loadAdvanced();
+</script>
+</body>
+</html>

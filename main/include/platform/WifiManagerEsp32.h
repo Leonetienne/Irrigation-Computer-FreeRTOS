@@ -51,17 +51,28 @@ public:
      */
     void setOnDisconnected(std::function<void()> callback) noexcept override;
 
+    /**
+     * Callback setter. Fired once connecting has repeatedly failed and no further
+     * automatic retries will be made.
+     * @param callback
+     */
+    void setOnFailed(std::function<void()> callback) noexcept override;
+
 private:
     /**
      * Static esp-idf event callback
      */
     static void eventHandler(void* arg, esp_event_base_t base, int32_t id, void* data) noexcept;
 
+    static constexpr int MAX_CONNECT_RETRIES = 5;
+
     bool isInitialized = false;
     bool eventHandlersRegistered = false;
     WifiConnectionState state = WifiConnectionState::Disconnected;
+    int connectFailureCount = 0;
     std::function<void()> onConnected;
     std::function<void()> onDisconnected;
+    std::function<void()> onFailed;
     esp_netif_t* netif = nullptr;
 };
 

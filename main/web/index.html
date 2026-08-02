@@ -1,85 +1,92 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Irrigation Computer</title>
-    <style>
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2rem;
-            background: #10131a;
-            font-family: sans-serif;
-            color: #e8e8e8;
-        }
-
-        .buttons {
-            display: flex;
-            gap: 1rem;
-        }
-
-        button {
-            font-size: 1.2rem;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            background: #2f7bd6;
-            color: #fff;
-            cursor: pointer;
-        }
-
-        button:active {
-            background: #1e5aa8;
-        }
-
-        .wifi-setup {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            width: 16rem;
-        }
-
-        .wifi-setup input {
-            font-size: 1rem;
-            padding: 0.5rem;
-            border: none;
-            border-radius: 0.5rem;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valves</title>
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <div class="buttons">
-        <button onclick="setValve('open')">Valve 0 open</button>
-        <button onclick="setValve('close')">Valve 0 close</button>
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>Valves</h1>
+            <p class="subtitle" id="device-name"></p>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <a href="/" class="active">Valves</a>
+        <a href="/settings">Settings</a>
+        <a href="/settings/advanced">Advanced</a>
+    </nav>
+
+    <div class="card">
+        <h2>Valves</h2>
+        <div id="valve-list"><div class="spin">Loading…</div></div>
     </div>
+</div>
 
-    <form class="wifi-setup" onsubmit="return saveWifi()">
-        <input id="ssid" type="text" placeholder="WLAN SSID" required>
-        <input id="password" type="password" placeholder="WLAN Passwort">
-        <button type="submit">WLAN speichern &amp; neu starten</button>
-    </form>
+<script>
+async function loadDeviceName() {
+    const res = await fetch('/api/settings');
+    const text = await res.text();
+    const values = {};
+    text.trim().split('\n').filter(Boolean).forEach(line => {
+        const i = line.indexOf('=');
+        values[line.slice(0, i)] = line.slice(i + 1);
+    });
+    const name = values.device_name || '';
+    document.title = name ? name + ' - Valves' : 'Valves';
+    document.getElementById('device-name').textContent = name;
+}
 
-    <script>
-        function setValve(action) {
-            fetch(`/api/valve/0/${action}`, {method: 'POST'});
-        }
+async function loadValves() {
+    const res = await fetch('/api/valves');
+    const text = await res.text();
+    const list = document.getElementById('valve-list');
+    list.innerHTML = '';
+    text.trim().split('\n').filter(Boolean).forEach(line => {
+        const [idx, state] = line.split(':');
+        const on = state === '1';
 
-        function saveWifi() {
-            const ssid = document.getElementById('ssid').value;
-            const password = document.getElementById('password').value;
-            const body = `ssid=${encodeURIComponent(ssid)}&password=${encodeURIComponent(password)}`;
-            fetch('/api/wifi', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body,
-            });
-            return false;
-        }
-    </script>
+        const row = document.createElement('div');
+        row.className = 'row';
+
+        const labelWrap = document.createElement('div');
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = 'Valve ' + idx;
+        const stateEl = document.createElement('div');
+        stateEl.className = 'state';
+        stateEl.textContent = on ? 'on' : 'off';
+        labelWrap.appendChild(label);
+        labelWrap.appendChild(stateEl);
+
+        const sw = document.createElement('label');
+        sw.className = 'switch';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = on;
+        input.addEventListener('change', () => toggleValve(idx, input.checked));
+        const slider = document.createElement('span');
+        slider.className = 'slider';
+        sw.appendChild(input);
+        sw.appendChild(slider);
+
+        row.appendChild(labelWrap);
+        row.appendChild(sw);
+        list.appendChild(row);
+    });
+}
+
+async function toggleValve(idx, on) {
+    await fetch(`/api/valve/${idx}/${on ? 'open' : 'close'}`, {method: 'POST'});
+    loadValves();
+}
+
+loadDeviceName();
+loadValves();
+</script>
 </body>
 </html>

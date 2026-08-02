@@ -6,6 +6,8 @@
 #include "SettingsManager.h"
 #include "WifiCredentials.h"
 #include "StateMachine.h"
+#include <string>
+#include <unordered_map>
 
 /**
  * Executes parsed api commands against the application state.
@@ -31,6 +33,50 @@ public:
         SettingsManager& settings,
         StateMachine& stateMachine,
         const WifiCredentials& credentials
+    ) noexcept;
+
+    /**
+     * @param valveGroup
+     * @return "idx:state\n" lines for every valve, state being 1 (open) or 0 (closed)
+     */
+    [[nodiscard]] static std::string buildValveReport(const ValveGroup& valveGroup) noexcept;
+
+    /**
+     * @param settings
+     * @return "key=value\n" lines describing the current settings
+     */
+    [[nodiscard]] static std::string buildSettingsReport(const SettingsManager& settings) noexcept;
+
+    /**
+     * Applies a parsed settings form and requests a shutdown
+     * @param settings
+     * @param stateMachine
+     * @param form
+     * @return Success state
+     */
+    [[nodiscard]] static bool applySettingsForm(
+        SettingsManager& settings,
+        StateMachine& stateMachine,
+        const std::unordered_map<std::string, std::string>& form
+    ) noexcept;
+
+    /**
+     * @param settings
+     * @return "key=value\n" lines describing the current advanced settings
+     */
+    [[nodiscard]] static std::string buildAdvancedSettingsReport(const SettingsManager& settings) noexcept;
+
+    /**
+     * Applies a parsed advanced settings form and requests a shutdown
+     * @param settings
+     * @param stateMachine
+     * @param form
+     * @return Success state
+     */
+    [[nodiscard]] static bool applyAdvancedSettingsForm(
+        SettingsManager& settings,
+        StateMachine& stateMachine,
+        const std::unordered_map<std::string, std::string>& form
     ) noexcept;
 };
 

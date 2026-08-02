@@ -49,7 +49,14 @@ private:
      */
     void onWifiDisconnected() noexcept;
 
+    /**
+     * Called by wifiMan once connecting with the stored credentials has
+     * repeatedly failed. Falls back to onboarding mode.
+     */
+    void onWifiFailed() noexcept;
+
     bool isInitialized = false;
+    bool wifiConnectFailed = false;
     StateMachine stateMachine;
     GpioPinRegister gpioPinRegister;
     GpioEsp32 gpio;

@@ -127,6 +127,36 @@ TEST_CASE("SettingsManager: valve actuator gpio pins", "[SettingsManager]") {
     }
 }
 
+TEST_CASE("SettingsManager: safety flags", "[SettingsManager]") {
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+
+    SECTION("round trip stores and retrieves runtime safety enabled") {
+        REQUIRE(settings.storeRuntimeSafetyEnabled(false));
+
+        const auto result = settings.retrieveRuntimeSafetyEnabled();
+        REQUIRE(result.has_value());
+        REQUIRE_FALSE(*result);
+    }
+
+    SECTION("retrieve fails when runtime safety was never stored") {
+        REQUIRE_FALSE(settings.retrieveRuntimeSafetyEnabled().has_value());
+    }
+
+    SECTION("round trip stores and retrieves cut on wifi loss enabled") {
+        REQUIRE(settings.storeCutOnWifiLossEnabled(true));
+
+        const auto result = settings.retrieveCutOnWifiLossEnabled();
+        REQUIRE(result.has_value());
+        REQUIRE(*result);
+    }
+
+    SECTION("retrieve fails when cut on wifi loss was never stored") {
+        REQUIRE_FALSE(settings.retrieveCutOnWifiLossEnabled().has_value());
+    }
+}
+
 TEST_CASE("SettingsManager: move", "[SettingsManager]") {
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));

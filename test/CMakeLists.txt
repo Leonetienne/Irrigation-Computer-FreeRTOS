@@ -24,6 +24,7 @@ add_executable(irrigation_computer_tests
         WifiCredentialsParser.cpp
         StateMachine.cpp
         SettingsManager.cpp
+        UrlEncodedForm.cpp
 
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/GpioPinRegister.cpp
@@ -56,6 +57,8 @@ add_executable(irrigation_computer_tests
         ../main/include/enum/States.h
         ../main/include/SettingsManager.h
         ../main/src/SettingsManager.cpp
+        ../main/include/UrlEncodedForm.h
+        ../main/src/UrlEncodedForm.cpp
         WifiManagerStub.cpp
 )
 

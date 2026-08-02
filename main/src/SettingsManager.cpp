@@ -114,3 +114,25 @@ std::expected<std::array<gpio_num_t, 8>, bool> SettingsManager::retrieveValveAct
     unpackGpioPins(word1, pins.data() + 4);
     return pins;
 }
+
+bool SettingsManager::storeRuntimeSafetyEnabled(bool enabled) const noexcept {
+    return i_nvs.setInt("rt_safety_en", enabled ? 1 : 0);
+}
+
+std::expected<bool, bool> SettingsManager::retrieveRuntimeSafetyEnabled() const noexcept {
+    if (int32_t buf{}; i_nvs.getInt("rt_safety_en", buf)) {
+        return buf != 0;
+    }
+    return std::unexpected(false);
+}
+
+bool SettingsManager::storeCutOnWifiLossEnabled(bool enabled) const noexcept {
+    return i_nvs.setInt("cut_wifi_en", enabled ? 1 : 0);
+}
+
+std::expected<bool, bool> SettingsManager::retrieveCutOnWifiLossEnabled() const noexcept {
+    if (int32_t buf{}; i_nvs.getInt("cut_wifi_en", buf)) {
+        return buf != 0;
+    }
+    return std::unexpected(false);
+}
