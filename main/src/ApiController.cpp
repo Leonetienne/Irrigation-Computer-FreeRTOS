@@ -47,16 +47,26 @@ void appendGpioField(std::string& report, const std::string& key, gpio_num_t pin
 
 }
 
-bool ApiController::executeValveOperation(ValveGroup& valveGroup, const ValveCommand& command) noexcept {
-    switch (command.action) {
-        case ValveAction::Open:
-            return valveGroup.open(command.valveIndex);
-
-        case ValveAction::Close:
-            return valveGroup.close(command.valveIndex);
+ValveOperationResult ApiController::executeValveOperation(
+    ValveGroup& valveGroup,
+    const ValveCommand& command
+) noexcept {
+    if (!valveGroup.isValveOperable(command.valveIndex)) {
+        return ValveOperationResult::InvalidRequest;
     }
 
-    return false;
+    bool success = false;
+    switch (command.action) {
+        case ValveAction::Open:
+            success = valveGroup.open(command.valveIndex);
+            break;
+
+        case ValveAction::Close:
+            success = valveGroup.close(command.valveIndex);
+            break;
+    }
+
+    return success ? ValveOperationResult::Success : ValveOperationResult::HardwareFailure;
 }
 
 bool ApiController::saveWifiCredentials(
@@ -81,14 +91,35 @@ bool ApiController::saveWifiCredentials(
     return true;
 }
 
-std::string ApiController::buildValveReport(const ValveGroup& valveGroup) noexcept {
+std::string ApiController::buildValveStatusReport(
+    const ValveGroup& valveGroup,
+    const SettingsManager& settings
+) noexcept {
     std::string report;
+    const int32_t numValves = settings.retrieveNumValves().value_or(0);
 
-    for (std::size_t i = 0; i < 8; ++i) {
+    for (int32_t i = 0; i < numValves && i < 8; ++i) {
         report += std::to_string(i);
         report += ':';
-        report += valveGroup.getValveOpenState(i).value_or(false) ? '1' : '0';
+        report += valveGroup.getValveOpenState(static_cast<std::size_t>(i)).value_or(false) ? '1' : '0';
         report += '\n';
+    }
+
+    return report;
+}
+
+std::string ApiController::buildValveConfigReport(const SettingsManager& settings) noexcept {
+    std::string report;
+    const int32_t numValves = settings.retrieveNumValves().value_or(0);
+
+    report += "num_valves=";
+    report += std::to_string(numValves);
+    report += '\n';
+
+    const auto pins = settings.retrieveValveActuatorGpioPins();
+    for (int32_t i = 0; i < numValves && i < 8; ++i) {
+        const gpio_num_t pin = pins.has_value() ? (*pins)[static_cast<std::size_t>(i)] : GPIO_NUM_NC;
+        appendGpioField(report, "gpio" + std::to_string(i), pin);
     }
 
     return report;

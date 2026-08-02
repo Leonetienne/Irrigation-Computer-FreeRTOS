@@ -28,27 +28,38 @@
 </div>
 
 <script>
-async function loadDeviceName() {
-    const res = await fetch('/api/settings');
-    const text = await res.text();
+function parseKeyValues(text) {
     const values = {};
     text.trim().split('\n').filter(Boolean).forEach(line => {
         const i = line.indexOf('=');
         values[line.slice(0, i)] = line.slice(i + 1);
     });
+    return values;
+}
+
+async function loadDeviceName() {
+    const res = await fetch('/api/settings');
+    const values = parseKeyValues(await res.text());
     const name = values.device_name || '';
     document.title = name ? name + ' - Valves' : 'Valves';
     document.getElementById('device-name').textContent = name;
 }
 
-async function loadValves() {
-    const res = await fetch('/api/valves');
-    const text = await res.text();
+async function loadValveList() {
+    const res = await fetch('/api/valve/config');
+    const values = parseKeyValues(await res.text());
+    const numValves = Number(values.num_valves) || 0;
+
     const list = document.getElementById('valve-list');
     list.innerHTML = '';
-    text.trim().split('\n').filter(Boolean).forEach(line => {
-        const [idx, state] = line.split(':');
-        const on = state === '1';
+
+    if (numValves === 0) {
+        list.innerHTML = '<div class="hint">No valves configured yet.</div>';
+        return;
+    }
+
+    for (let idx = 0; idx < numValves; idx++) {
+        const configured = Boolean(values['gpio' + idx]);
 
         const row = document.createElement('div');
         row.className = 'row';
@@ -59,7 +70,8 @@ async function loadValves() {
         label.textContent = 'Valve ' + idx;
         const stateEl = document.createElement('div');
         stateEl.className = 'state';
-        stateEl.textContent = on ? 'on' : 'off';
+        stateEl.id = 'valve-state-' + idx;
+        stateEl.textContent = configured ? 'off' : 'please configure gpio';
         labelWrap.appendChild(label);
         labelWrap.appendChild(stateEl);
 
@@ -67,7 +79,8 @@ async function loadValves() {
         sw.className = 'switch';
         const input = document.createElement('input');
         input.type = 'checkbox';
-        input.checked = on;
+        input.id = 'valve-toggle-' + idx;
+        input.disabled = !configured;
         input.addEventListener('change', () => toggleValve(idx, input.checked));
         const slider = document.createElement('span');
         slider.className = 'slider';
@@ -77,16 +90,30 @@ async function loadValves() {
         row.appendChild(labelWrap);
         row.appendChild(sw);
         list.appendChild(row);
+    }
+}
+
+async function loadValveStatus() {
+    const res = await fetch('/api/valve/status');
+    const text = await res.text();
+    text.trim().split('\n').filter(Boolean).forEach(line => {
+        const [idx, state] = line.split(':');
+        const input = document.getElementById('valve-toggle-' + idx);
+        if (!input || input.disabled) return;
+
+        const on = state === '1';
+        input.checked = on;
+        document.getElementById('valve-state-' + idx).textContent = on ? 'on' : 'off';
     });
 }
 
 async function toggleValve(idx, on) {
     await fetch(`/api/valve/${idx}/${on ? 'open' : 'close'}`, {method: 'POST'});
-    loadValves();
+    loadValveStatus();
 }
 
 loadDeviceName();
-loadValves();
+loadValveList().then(loadValveStatus);
 </script>
 </body>
 </html>

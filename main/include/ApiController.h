@@ -6,6 +6,7 @@
 #include "SettingsManager.h"
 #include "WifiCredentials.h"
 #include "StateMachine.h"
+#include "enum/ValveOperationResult.h"
 #include <string>
 #include <unordered_map>
 
@@ -18,9 +19,12 @@ public:
      * Executes a parsed valve command against the given valve group
      * @param valveGroup the valve group to operate on
      * @param command
-     * @return Success state
+     * @return Outcome of the operation
      */
-    [[nodiscard]] static bool executeValveOperation(ValveGroup& valveGroup, const ValveCommand& command) noexcept;
+    [[nodiscard]] static ValveOperationResult executeValveOperation(
+        ValveGroup& valveGroup,
+        const ValveCommand& command
+    ) noexcept;
 
     /**
      * Persists wifi credentials and requests a shutdown
@@ -37,9 +41,20 @@ public:
 
     /**
      * @param valveGroup
-     * @return "idx:state\n" lines for every valve, state being 1 (open) or 0 (closed)
+     * @param settings
+     * @return "idx:state\n" lines for every configured valve, state being 1 (open) or 0 (closed)
      */
-    [[nodiscard]] static std::string buildValveReport(const ValveGroup& valveGroup) noexcept;
+    [[nodiscard]] static std::string buildValveStatusReport(
+        const ValveGroup& valveGroup,
+        const SettingsManager& settings
+    ) noexcept;
+
+    /**
+     * @param settings
+     * @return "num_valves=N\n" followed by "gpioI=pin\n" for every configured valve (0..N-1),
+     * blank if that valve has no pin assigned yet
+     */
+    [[nodiscard]] static std::string buildValveConfigReport(const SettingsManager& settings) noexcept;
 
     /**
      * @param settings

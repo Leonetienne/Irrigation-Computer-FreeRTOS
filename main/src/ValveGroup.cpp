@@ -154,3 +154,11 @@ std::expected<bool, bool> ValveGroup::getValveOpenState(std::size_t index) const
 
     return std::unexpected(false);
 }
+
+bool ValveGroup::isValveOperable(std::size_t index) const noexcept {
+    if (!isInitialized || index >= valves->size()) {
+        return false;
+    }
+
+    return (*valves)[index].isReady();
+}

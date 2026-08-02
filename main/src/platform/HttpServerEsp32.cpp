@@ -169,8 +169,10 @@ esp_err_t HttpServerEsp32::handleGetApi(httpd_req_t* req) noexcept {
         report = ApiController::buildSettingsReport(self->settings);
     } else if (uri == "/api/settings/advanced") {
         report = ApiController::buildAdvancedSettingsReport(self->settings);
-    } else if (uri == "/api/valves") {
-        report = ApiController::buildValveReport(self->valveGroup);
+    } else if (uri == "/api/valve/config") {
+        report = ApiController::buildValveConfigReport(self->settings);
+    } else if (uri == "/api/valve/status") {
+        report = ApiController::buildValveStatusReport(self->valveGroup, self->settings);
     } else {
         httpd_resp_send_404(req);
         return ESP_FAIL;
@@ -212,14 +214,23 @@ esp_err_t HttpServerEsp32::handleValveCommand(httpd_req_t* req) noexcept {
     }
 
     auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
-    if (!ApiController::executeValveOperation(self->valveGroup, *command)) {
-        httpd_resp_set_status(req, "500 Internal Server Error");
-        httpd_resp_send(req, nullptr, 0);
-        return ESP_OK;
+    switch (ApiController::executeValveOperation(self->valveGroup, *command)) {
+        case ValveOperationResult::Success:
+            httpd_resp_send(req, nullptr, 0);
+            return ESP_OK;
+
+        case ValveOperationResult::InvalidRequest:
+            httpd_resp_set_status(req, "400 Bad Request");
+            httpd_resp_send(req, nullptr, 0);
+            return ESP_FAIL;
+
+        case ValveOperationResult::HardwareFailure:
+            httpd_resp_set_status(req, "500 Internal Server Error");
+            httpd_resp_send(req, nullptr, 0);
+            return ESP_OK;
     }
 
-    httpd_resp_send(req, nullptr, 0);
-    return ESP_OK;
+    return ESP_FAIL;
 }
 
 esp_err_t HttpServerEsp32::handleWifiCredentials(httpd_req_t* req) noexcept {

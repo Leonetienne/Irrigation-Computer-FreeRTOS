@@ -74,6 +74,12 @@ public:
      */
     [[nodiscard]] std::expected<bool, bool> getValveOpenState(std::size_t index) const noexcept;
 
+    /**
+     * @param index Valve index
+     * @return Whether that index exists and has a gpio pin configured, i.e. can be opened/closed
+     */
+    [[nodiscard]] bool isValveOperable(std::size_t index) const noexcept;
+
 private:
     bool isInitialized = false;
     // Optional to allow empty initialization in ctor, and create after reading NVS
