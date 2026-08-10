@@ -29,18 +29,18 @@
         <input type="text" id="device_name" name="device_name" maxlength="31" required>
 
         <h2 style="margin-top:1.4rem">MQTT</h2>
-        <p class="hint">Not wired up yet.</p>
+        <p class="hint">Leave the broker URI blank to disable MQTT.</p>
         <label for="mqtt_uri">Broker URI</label>
-        <input type="text" id="mqtt_uri" name="mqtt_uri" placeholder="mqtt://192.168.0.10:1883" maxlength="63" disabled="">
+        <input type="text" id="mqtt_uri" name="mqtt_uri" placeholder="mqtt://192.168.0.10:1883" maxlength="63">
 
         <label for="mqtt_user">Username</label>
-        <input type="text" id="mqtt_user" name="mqtt_user" maxlength="31" disabled="">
+        <input type="text" id="mqtt_user" name="mqtt_user" maxlength="31">
 
         <label for="mqtt_pass">Password</label>
-        <input type="password" id="mqtt_pass" name="mqtt_pass" placeholder="leave blank to keep unchanged" disabled="">
+        <input type="password" id="mqtt_pass" name="mqtt_pass" placeholder="leave blank to keep unchanged">
 
         <label for="node_id">Discovery node ID</label>
-        <input type="text" id="node_id" name="node_id" maxlength="31" disabled="">
+        <input type="text" id="node_id" name="node_id" maxlength="31" placeholder="defaults to device name">
 
         <h2 style="margin-top:1.4rem">Safety</h2>
         <label for="max_valve_runtime_min">Max valve runtime (minutes)</label>
@@ -55,8 +55,8 @@
             <label for="enable_cut_on_wifi_loss" style="margin:0">Enable shutoff on WiFi loss</label>
         </div>
         <div class="check-row">
-            <input type="checkbox" id="disable_cut_on_mqtt_loss" name="disable_cut_on_mqtt_loss" value="1" disabled="">
-            <label for="disable_cut_on_mqtt_loss" style="margin:0">Disable shutoff on MQTT loss</label>
+            <input type="checkbox" id="enable_cut_on_mqtt_loss" name="enable_cut_on_mqtt_loss" value="1" checked>
+            <label for="enable_cut_on_mqtt_loss" style="margin:0">Enable shutoff on MQTT loss</label>
         </div>
 
         <h2 style="margin-top:1.4rem">Web interface</h2>
@@ -101,6 +101,11 @@ async function loadSettings() {
     document.getElementById('password').placeholder = values.wifi_password_set === '1' ? 'leave blank to keep unchanged' : '';
     document.getElementById('enable_runtime_safety').checked = values.runtime_safety_enabled !== '0';
     document.getElementById('enable_cut_on_wifi_loss').checked = values.cut_on_wifi_loss_enabled !== '0';
+    document.getElementById('mqtt_uri').value = values.mqtt_uri || '';
+    document.getElementById('mqtt_user').value = values.mqtt_user || '';
+    document.getElementById('mqtt_pass').placeholder = values.mqtt_password_set === '1' ? 'leave blank to keep unchanged' : '';
+    document.getElementById('node_id').value = values.node_id || '';
+    document.getElementById('enable_cut_on_mqtt_loss').checked = values.cut_on_mqtt_loss_enabled !== '0';
 }
 
 document.getElementById('settings-form').addEventListener('submit', async (e) => {

@@ -9,7 +9,9 @@
 #include "test/stubs/NVSStub.h"
 #include "test/stubs/WifiManagerStub.h"
 #include "test/stubs/HttpServerStub.h"
+#include "test/stubs/MqttStub.h"
 #include "test/stubs/SystemStub.h"
+#include "MqttSync.h"
 
 TEST_CASE("System: init", "[System]") {
     GpioPinRegister pr{};
@@ -22,8 +24,10 @@ TEST_CASE("System: init", "[System]") {
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
+    MqttStub mqttStub{};
+    MqttSync mqttSync(mqttStub, valveGroup, settings);
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
 
     SECTION("without stored wifi credentials enters onboarding and starts the http server") {
         system.init();
@@ -75,8 +79,10 @@ TEST_CASE("System: free", "[System]") {
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
+    MqttStub mqttStub{};
+    MqttSync mqttSync(mqttStub, valveGroup, settings);
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
 
     SECTION("fails before init") {
         REQUIRE_FALSE(system.free());
@@ -110,8 +116,10 @@ TEST_CASE("System: onWifiConnected", "[System]") {
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
+    MqttStub mqttStub{};
+    MqttSync mqttSync(mqttStub, valveGroup, settings);
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
 
     // no stored credentials -> onboarding, http server already begun once by init()
     system.init();
@@ -135,8 +143,10 @@ TEST_CASE("System: onWifiDisconnected", "[System]") {
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
+    MqttStub mqttStub{};
+    MqttSync mqttSync(mqttStub, valveGroup, settings);
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
 
     REQUIRE(settings.storeNumValves(1));
     REQUIRE(settings.storeValveActuatorGpioPins({
@@ -175,8 +185,10 @@ TEST_CASE("System: onWifiFailed defers the onboarding fallback to update()", "[S
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
+    MqttStub mqttStub{};
+    MqttSync mqttSync(mqttStub, valveGroup, settings);
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
 
     system.init();
     wifiMan.simulateConnected();
@@ -215,8 +227,10 @@ TEST_CASE("System: update polls valve auto-close timeouts", "[System]") {
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
+    MqttStub mqttStub{};
+    MqttSync mqttSync(mqttStub, valveGroup, settings);
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
 
     REQUIRE(settings.storeNumValves(1));
     REQUIRE(settings.storeValveActuatorGpioPins({

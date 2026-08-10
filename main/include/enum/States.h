@@ -11,7 +11,6 @@ enum class STATE : uint8_t {
     INITIALIZATION,  // System is starting up
     WIFI_ONBOARDING, // System has launched a wifi access point for the user to configure proper wifi credentials
     WAIT_WIFI_CONNECTION,
-    WAIT_MQTT_CONNECTION, // Only relevant if mqtt is configured
     OPERATIONAL,     // System is fine and operating normally
     FAULT,           // The system has entered an invalid state.
     SHUTTING_DOWN    // System is shutting down

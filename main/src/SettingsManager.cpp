@@ -136,3 +136,47 @@ std::expected<bool, bool> SettingsManager::retrieveCutOnWifiLossEnabled() const 
     }
     return std::unexpected(false);
 }
+
+bool SettingsManager::storeMqttBrokerConfig(const MqttBrokerConfig& config) const noexcept {
+    return
+        i_nvs.setString("mqtt_uri", config.uri.c_str()) &&
+        i_nvs.setString("mqtt_user", config.username.c_str()) &&
+        i_nvs.setString("mqtt_pass", config.password.c_str());
+}
+
+std::expected<MqttBrokerConfig, bool> SettingsManager::retrieveMqttBrokerConfig() const noexcept {
+    char uri[NVS_MAX_STRING_LENGTH + 1] = {};
+    if (!i_nvs.getString("mqtt_uri", uri)) {
+        return std::unexpected(false);
+    }
+
+    char user[NVS_MAX_STRING_LENGTH + 1] = {};
+    char pass[NVS_MAX_STRING_LENGTH + 1] = {};
+    i_nvs.getString("mqtt_user", user);
+    i_nvs.getString("mqtt_pass", pass);
+
+    return MqttBrokerConfig{uri, user, pass};
+}
+
+bool SettingsManager::storeMqttNodeId(const std::string& nodeId) const noexcept {
+    return i_nvs.setString("node_id", nodeId.c_str());
+}
+
+std::expected<std::string, bool> SettingsManager::retrieveMqttNodeId() const noexcept {
+    char buf[NVS_MAX_STRING_LENGTH + 1] = {};
+    if (!i_nvs.getString("node_id", buf)) {
+        return std::unexpected(false);
+    }
+    return std::string(buf);
+}
+
+bool SettingsManager::storeCutOnMqttLossEnabled(bool enabled) const noexcept {
+    return i_nvs.setInt("cut_mqtt_en", enabled ? 1 : 0);
+}
+
+std::expected<bool, bool> SettingsManager::retrieveCutOnMqttLossEnabled() const noexcept {
+    if (int32_t buf{}; i_nvs.getInt("cut_mqtt_en", buf)) {
+        return buf != 0;
+    }
+    return std::unexpected(false);
+}

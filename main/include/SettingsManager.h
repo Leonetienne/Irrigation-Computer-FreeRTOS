@@ -4,6 +4,7 @@
 #include "hal/INVS.h"
 #include "compat/gpio_num_t.h"
 #include "WifiCredentials.h"
+#include "MqttBrokerConfig.h"
 #include <array>
 #include <expected>
 
@@ -66,6 +67,24 @@ public:
      */
     bool storeCutOnWifiLossEnabled(bool enabled) const noexcept;
     [[nodiscard]] std::expected<bool, bool> retrieveCutOnWifiLossEnabled() const noexcept;
+
+    /**
+     * @return Success state
+     */
+    bool storeMqttBrokerConfig(const MqttBrokerConfig& config) const noexcept;
+    [[nodiscard]] std::expected<MqttBrokerConfig, bool> retrieveMqttBrokerConfig() const noexcept;
+
+    /**
+     * @return Success state
+     */
+    bool storeMqttNodeId(const std::string& nodeId) const noexcept;
+    [[nodiscard]] std::expected<std::string, bool> retrieveMqttNodeId() const noexcept;
+
+    /**
+     * @return Success state
+     */
+    bool storeCutOnMqttLossEnabled(bool enabled) const noexcept;
+    [[nodiscard]] std::expected<bool, bool> retrieveCutOnMqttLossEnabled() const noexcept;
 
 private:
     INVS& i_nvs;

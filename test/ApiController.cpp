@@ -200,7 +200,8 @@ TEST_CASE("ApiController: settings report/form", "[ApiController]") {
     SECTION("buildSettingsReport reports blank fields when nothing was stored") {
         REQUIRE(ApiController::buildSettingsReport(settings) ==
             "device_name=\nmax_valve_runtime_min=\nwifi_ssid=\nwifi_password_set=0\n"
-            "runtime_safety_enabled=\ncut_on_wifi_loss_enabled=\n");
+            "runtime_safety_enabled=\ncut_on_wifi_loss_enabled=\n"
+            "mqtt_uri=\nmqtt_user=\nmqtt_password_set=0\nnode_id=\ncut_on_mqtt_loss_enabled=\n");
     }
 
     SECTION("buildSettingsReport reports stored values") {
@@ -209,16 +210,22 @@ TEST_CASE("ApiController: settings report/form", "[ApiController]") {
         REQUIRE(settings.storeWifiCredentials(WifiCredentials{"MyHomeWifi", "hunter2"}));
         REQUIRE(settings.storeRuntimeSafetyEnabled(false));
         REQUIRE(settings.storeCutOnWifiLossEnabled(true));
+        REQUIRE(settings.storeMqttBrokerConfig(MqttBrokerConfig{"mqtt://broker:1883", "mqttuser", "mqttpass"}));
+        REQUIRE(settings.storeMqttNodeId("garden_node"));
+        REQUIRE(settings.storeCutOnMqttLossEnabled(true));
         REQUIRE(ApiController::buildSettingsReport(settings) ==
             "device_name=Garden\nmax_valve_runtime_min=45\nwifi_ssid=MyHomeWifi\nwifi_password_set=1\n"
-            "runtime_safety_enabled=0\ncut_on_wifi_loss_enabled=1\n");
+            "runtime_safety_enabled=0\ncut_on_wifi_loss_enabled=1\n"
+            "mqtt_uri=mqtt://broker:1883\nmqtt_user=mqttuser\nmqtt_password_set=1\n"
+            "node_id=garden_node\ncut_on_mqtt_loss_enabled=1\n");
     }
 
     SECTION("buildSettingsReport reports wifi_password_set=0 for an open network") {
         REQUIRE(settings.storeWifiCredentials(WifiCredentials{"OpenWifi", ""}));
         REQUIRE(ApiController::buildSettingsReport(settings) ==
             "device_name=\nmax_valve_runtime_min=\nwifi_ssid=OpenWifi\nwifi_password_set=0\n"
-            "runtime_safety_enabled=\ncut_on_wifi_loss_enabled=\n");
+            "runtime_safety_enabled=\ncut_on_wifi_loss_enabled=\n"
+            "mqtt_uri=\nmqtt_user=\nmqtt_password_set=0\nnode_id=\ncut_on_mqtt_loss_enabled=\n");
     }
 
     SECTION("applySettingsForm stores the submitted values") {
@@ -239,6 +246,7 @@ TEST_CASE("ApiController: settings report/form", "[ApiController]") {
         REQUIRE(ApiController::applySettingsForm(settings, stateMachine, form));
         REQUIRE_FALSE(*settings.retrieveRuntimeSafetyEnabled());
         REQUIRE_FALSE(*settings.retrieveCutOnWifiLossEnabled());
+        REQUIRE_FALSE(*settings.retrieveCutOnMqttLossEnabled());
     }
 
     SECTION("applySettingsForm enables safety flags when their checkboxes are present") {
@@ -247,10 +255,12 @@ TEST_CASE("ApiController: settings report/form", "[ApiController]") {
             {"max_valve_runtime_min", "45"},
             {"enable_runtime_safety", "1"},
             {"enable_cut_on_wifi_loss", "1"},
+            {"enable_cut_on_mqtt_loss", "1"},
         };
         REQUIRE(ApiController::applySettingsForm(settings, stateMachine, form));
         REQUIRE(*settings.retrieveRuntimeSafetyEnabled());
         REQUIRE(*settings.retrieveCutOnWifiLossEnabled());
+        REQUIRE(*settings.retrieveCutOnMqttLossEnabled());
     }
 
     SECTION("applySettingsForm requests a shutdown on success") {

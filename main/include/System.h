@@ -9,6 +9,7 @@
 #include "StateMachine.h"
 #include "SettingsManager.h"
 #include "ValveGroup.h"
+#include "MqttSync.h"
 #include "hal/IGpio.h"
 #include "hal/ITime.h"
 #include "hal/INVS.h"
@@ -34,7 +35,8 @@ public:
         SettingsManager& settings,
         IWifiManager& wifiMan,
         ValveGroup& valveGroup,
-        IHttpServer& httpServer
+        IHttpServer& httpServer,
+        MqttSync& mqttSync
     ) noexcept;
     System(const System&) = delete;
     System& operator=(const System&) = delete;
@@ -86,6 +88,7 @@ private:
     IWifiManager& wifiMan;
     ValveGroup& valveGroup;
     IHttpServer& httpServer;
+    MqttSync& mqttSync;
 };
 
 

@@ -21,7 +21,8 @@ System::System(
     SettingsManager& settings,
     IWifiManager& wifiMan,
     ValveGroup& valveGroup,
-    IHttpServer& httpServer
+    IHttpServer& httpServer,
+    MqttSync& mqttSync
 ) noexcept :
     stateMachine(stateMachine),
     gpioPinRegister(gpioPinRegister),
@@ -31,7 +32,8 @@ System::System(
     settings(settings),
     wifiMan(wifiMan),
     valveGroup(valveGroup),
-    httpServer(httpServer)
+    httpServer(httpServer),
+    mqttSync(mqttSync)
 { }
 
 System::~System() noexcept {
@@ -49,6 +51,8 @@ void System::init() noexcept {
     wifiMan.setOnConnected([this]() { onWifiConnected(); });
     wifiMan.setOnDisconnected([this]() { onWifiDisconnected(); });
     wifiMan.setOnFailed([this]() { onWifiFailed(); });
+
+    mqttSync.begin();
 
     const auto storedCredentials = settings.retrieveWifiCredentials();
 
@@ -102,8 +106,9 @@ bool System::free() noexcept {
         return false;
     }
 
-    // httpServer may already be stopped (e.g. if wifi was disconnected) - that's fine
+    // httpServer/mqttSync may already be stopped (e.g. if wifi was disconnected) - that's fine
     httpServer.free();
+    mqttSync.disconnect();
 
     if (!wifiMan.free()) {
         return false;
@@ -126,11 +131,13 @@ void System::beforeShutdown() noexcept {
 
 void System::update() noexcept {
     valveGroup.autoCloseValvesAfterTimeoutPoll();
+    mqttSync.pollPublishStateChanges();
 
     if (wifiConnectFailed) {
         wifiConnectFailed = false;
         ESP_LOGW(LOG_TAG, "wifi connect failed, falling back to onboarding ap");
         httpServer.free();
+        mqttSync.disconnect();
         wifiMan.free();
         wifiMan.beginOnboardingWifi();
         httpServer.begin();
@@ -142,6 +149,7 @@ void System::onWifiConnected() noexcept {
     ESP_LOGI(LOG_TAG, "wifi connected");
     stateMachine.setState(STATE::OPERATIONAL);
     httpServer.begin();
+    mqttSync.connect();
 }
 
 void System::onWifiDisconnected() noexcept {

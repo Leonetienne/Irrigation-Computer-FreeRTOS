@@ -45,6 +45,11 @@ void appendGpioField(std::string& report, const std::string& key, gpio_num_t pin
     report += '\n';
 }
 
+std::string formValue(const std::unordered_map<std::string, std::string>& form, const std::string& key) noexcept {
+    const auto it = form.find(key);
+    return it != form.end() ? it->second : std::string();
+}
+
 }
 
 ValveOperationResult ApiController::executeValveOperation(
@@ -164,6 +169,36 @@ std::string ApiController::buildSettingsReport(const SettingsManager& settings) 
     }
     report += '\n';
 
+    const auto mqttConfig = settings.retrieveMqttBrokerConfig();
+
+    report += "mqtt_uri=";
+    if (mqttConfig.has_value()) {
+        report += mqttConfig->uri;
+    }
+    report += '\n';
+
+    report += "mqtt_user=";
+    if (mqttConfig.has_value()) {
+        report += mqttConfig->username;
+    }
+    report += '\n';
+
+    report += "mqtt_password_set=";
+    report += (mqttConfig.has_value() && !mqttConfig->password.empty()) ? '1' : '0';
+    report += '\n';
+
+    report += "node_id=";
+    if (const auto nodeId = settings.retrieveMqttNodeId(); nodeId.has_value()) {
+        report += *nodeId;
+    }
+    report += '\n';
+
+    report += "cut_on_mqtt_loss_enabled=";
+    if (const auto cutOnMqttLoss = settings.retrieveCutOnMqttLossEnabled(); cutOnMqttLoss.has_value()) {
+        report += *cutOnMqttLoss ? '1' : '0';
+    }
+    report += '\n';
+
     return report;
 }
 
@@ -185,11 +220,28 @@ bool ApiController::applySettingsForm(
 
     const bool runtimeSafetyEnabled = form.contains("enable_runtime_safety");
     const bool cutOnWifiLossEnabled = form.contains("enable_cut_on_wifi_loss");
+    const bool cutOnMqttLossEnabled = form.contains("enable_cut_on_mqtt_loss");
+
+    MqttBrokerConfig mqttConfig{
+        formValue(form, "mqtt_uri"),
+        formValue(form, "mqtt_user"),
+        formValue(form, "mqtt_pass")
+    };
+
+    // a blank password means "keep the current one", unless there isn't one to keep
+    if (mqttConfig.password.empty()) {
+        if (const auto existing = settings.retrieveMqttBrokerConfig(); existing.has_value()) {
+            mqttConfig.password = existing->password;
+        }
+    }
 
     if (!settings.storeTitle(nameIt->second) ||
         !settings.storeMaxValveRuntime(maxValveRuntime) ||
         !settings.storeRuntimeSafetyEnabled(runtimeSafetyEnabled) ||
-        !settings.storeCutOnWifiLossEnabled(cutOnWifiLossEnabled)) {
+        !settings.storeCutOnWifiLossEnabled(cutOnWifiLossEnabled) ||
+        !settings.storeMqttBrokerConfig(mqttConfig) ||
+        !settings.storeMqttNodeId(formValue(form, "node_id")) ||
+        !settings.storeCutOnMqttLossEnabled(cutOnMqttLossEnabled)) {
         return false;
     }
 

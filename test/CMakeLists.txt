@@ -26,6 +26,9 @@ add_executable(irrigation_computer_tests
         SettingsManager.cpp
         UrlEncodedForm.cpp
         System.cpp
+        MqttTopics.cpp
+        MqttStub.cpp
+        MqttSync.cpp
 
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/GpioPinRegister.cpp
@@ -67,6 +70,16 @@ add_executable(irrigation_computer_tests
         ../main/src/test/stubs/SystemStub.cpp
         ../main/include/System.h
         ../main/src/System.cpp
+        ../main/include/enum/MqttConnectionState.h
+        ../main/include/MqttConnectOptions.h
+        ../main/include/MqttBrokerConfig.h
+        ../main/include/hal/IMqtt.h
+        ../main/include/MqttTopics.h
+        ../main/src/MqttTopics.cpp
+        ../main/include/test/stubs/MqttStub.h
+        ../main/src/test/stubs/MqttStub.cpp
+        ../main/include/MqttSync.h
+        ../main/src/MqttSync.cpp
         WifiManagerStub.cpp
 )
 
