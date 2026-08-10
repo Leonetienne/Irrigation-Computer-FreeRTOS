@@ -20,14 +20,14 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
     SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
-        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_1, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_2, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_3, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_4, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_5, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_6, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_0, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_1, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_2, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_3, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_4, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_5, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_6, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_7, GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
     ValveGroup group(timeStub, settings);
@@ -152,14 +152,14 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
     SECTION("dtor after free() does not double-free") {
         {
             std::array<Valve, 8> scopedValves = {
-                Valve(GPIO_NUM_8, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_9, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_10, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_11, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_12, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_13, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_14, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_15, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_8, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_9, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_10, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_11, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_12, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_13, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_14, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_15, GPIO_NUM_NC, gpioStub, timeStub, pr),
             };
             ValveGroup scopedGroup(timeStub, settings);
             REQUIRE(scopedGroup.initialize(std::move(scopedValves)));
@@ -171,14 +171,14 @@ TEST_CASE("ValveGroup: lifecycle", "[ValveGroup]") {
     SECTION("dtor calls free when not freed before") {
         {
             std::array<Valve, 8> scopedValves = {
-                Valve(GPIO_NUM_16, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_17, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_18, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_19, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_20, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_21, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-                Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_16, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_17, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_18, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_19, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_20, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_21, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+                Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
             };
             ValveGroup scopedGroup(timeStub, settings);
             REQUIRE(scopedGroup.initialize(std::move(scopedValves)));
@@ -197,14 +197,14 @@ TEST_CASE("ValveGroup: each valve index maps to correct gpio pin", "[ValveGroup]
     SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
-        Valve(GPIO_NUM_10, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_11, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_12, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_13, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_14, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_15, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_16, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_17, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_10, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_11, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_12, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_13, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_14, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_15, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_16, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_17, GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
     ValveGroup group(timeStub, settings);
@@ -269,14 +269,14 @@ TEST_CASE("ValveGroup: initialize skips NC pins", "[ValveGroup]") {
     SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
-        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_2, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_4, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_6, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_0, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_2, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_4, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_6, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
     ValveGroup group(timeStub, settings);
@@ -311,14 +311,14 @@ TEST_CASE("ValveGroup: move", "[ValveGroup]") {
     SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
-        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_1, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_2, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_3, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_4, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_5, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_6, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_0, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_1, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_2, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_3, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_4, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_5, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_6, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_7, GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
     ValveGroup group(timeStub, settings);
@@ -354,14 +354,14 @@ TEST_CASE("ValveGroup: move", "[ValveGroup]") {
         REQUIRE(group.initialize(std::move(valves)));
 
         std::array<Valve, 8> otherValves = {
-            Valve(GPIO_NUM_20, gpioStub, timeStub, pr),
-            Valve(GPIO_NUM_21, gpioStub, timeStub, pr),
-            Valve(GPIO_NUM_22, gpioStub, timeStub, pr),
-            Valve(GPIO_NUM_23, gpioStub, timeStub, pr),
-            Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-            Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-            Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-            Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_20, GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_21, GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_22, GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_23, GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+            Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
         };
         ValveGroup other(timeStub, settings);
         REQUIRE(other.initialize(std::move(otherValves)));
@@ -386,14 +386,14 @@ TEST_CASE("ValveGroup: auto close timeout", "[ValveGroup]") {
     SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
-        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_1, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_2, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_3, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_4, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_5, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_6, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_0, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_1, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_2, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_3, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_4, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_5, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_6, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_7, GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
     ValveGroup group(timeStub, settings);
@@ -484,14 +484,14 @@ TEST_CASE("ValveGroup: getValveOpenState", "[ValveGroup]") {
     SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
-        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_1, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_2, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_3, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_4, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_5, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_6, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_0, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_1, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_2, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_3, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_4, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_5, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_6, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_7, GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
     ValveGroup group(timeStub, settings);
@@ -532,14 +532,14 @@ TEST_CASE("ValveGroup: isValveOperable", "[ValveGroup]") {
     SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
-        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_2, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_4, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_6, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_0, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_2, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_4, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_6, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
     ValveGroup group(timeStub, settings);

@@ -18,14 +18,14 @@ TEST_CASE("ApiController: executeValveOperation", "[ApiController]") {
     SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
-        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_1, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_2, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_3, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_5, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_6, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_7, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_0, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_1, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_2, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_3, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_5, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_6, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_7, GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
     ValveGroup group(timeStub, settings);
@@ -135,14 +135,14 @@ TEST_CASE("ApiController: buildValveStatusReport", "[ApiController]") {
     SettingsManager settings(nvs);
 
     std::array<Valve, 8> valves = {
-        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_1, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_0, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_1, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 
     ValveGroup group(timeStub, settings);
@@ -305,7 +305,11 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
 
     SECTION("buildAdvancedSettingsReport reports blank fields when nothing was stored") {
         const std::string report = ApiController::buildAdvancedSettingsReport(settings);
-        REQUIRE(report == "num_valves=\ngpio0=\ngpio1=\ngpio2=\ngpio3=\ngpio4=\ngpio5=\ngpio6=\ngpio7=\n");
+        REQUIRE(report ==
+            "num_valves=\ngpio0=\ngpio1=\ngpio2=\ngpio3=\ngpio4=\ngpio5=\ngpio6=\ngpio7=\n"
+            "valve_led_gpio0=\nvalve_led_gpio1=\nvalve_led_gpio2=\nvalve_led_gpio3=\n"
+            "valve_led_gpio4=\nvalve_led_gpio5=\nvalve_led_gpio6=\nvalve_led_gpio7=\n"
+            "wifi_led_gpio=\nmqtt_led_gpio=\n");
     }
 
     SECTION("buildAdvancedSettingsReport reports stored values") {
@@ -314,8 +318,19 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
             GPIO_NUM_13, GPIO_NUM_14, GPIO_NUM_15, GPIO_NUM_16,
             GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC,
         }));
+        REQUIRE(settings.storeValveIndicatorGpioPins({
+            GPIO_NUM_20, GPIO_NUM_21, GPIO_NUM_NC, GPIO_NUM_NC,
+            GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC,
+        }));
+        REQUIRE(settings.storeWifiLedGpioPin(GPIO_NUM_2));
+        REQUIRE(settings.storeMqttLedGpioPin(GPIO_NUM_3));
+
         const std::string report = ApiController::buildAdvancedSettingsReport(settings);
-        REQUIRE(report == "num_valves=4\ngpio0=13\ngpio1=14\ngpio2=15\ngpio3=16\ngpio4=\ngpio5=\ngpio6=\ngpio7=\n");
+        REQUIRE(report ==
+            "num_valves=4\ngpio0=13\ngpio1=14\ngpio2=15\ngpio3=16\ngpio4=\ngpio5=\ngpio6=\ngpio7=\n"
+            "valve_led_gpio0=20\nvalve_led_gpio1=21\nvalve_led_gpio2=\nvalve_led_gpio3=\n"
+            "valve_led_gpio4=\nvalve_led_gpio5=\nvalve_led_gpio6=\nvalve_led_gpio7=\n"
+            "wifi_led_gpio=2\nmqtt_led_gpio=3\n");
     }
 
     SECTION("applyAdvancedSettingsForm stores the submitted values") {
@@ -325,6 +340,10 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
             {"gpio1", "14"},
             {"gpio2", "15"},
             {"gpio3", "16"},
+            {"valve_led_gpio0", "20"},
+            {"valve_led_gpio1", "21"},
+            {"wifi_led_gpio", "2"},
+            {"mqtt_led_gpio", "3"},
         };
         REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
         REQUIRE(*settings.retrieveNumValves() == 4);
@@ -335,12 +354,25 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
         REQUIRE((*pins)[3] == GPIO_NUM_16);
         REQUIRE((*pins)[4] == GPIO_NUM_NC);
         REQUIRE((*pins)[7] == GPIO_NUM_NC);
+
+        const auto indicatorPins = settings.retrieveValveIndicatorGpioPins();
+        REQUIRE(indicatorPins.has_value());
+        REQUIRE((*indicatorPins)[0] == GPIO_NUM_20);
+        REQUIRE((*indicatorPins)[1] == GPIO_NUM_21);
+        REQUIRE((*indicatorPins)[2] == GPIO_NUM_NC);
+
+        REQUIRE(*settings.retrieveWifiLedGpioPin() == GPIO_NUM_2);
+        REQUIRE(*settings.retrieveMqttLedGpioPin() == GPIO_NUM_3);
     }
 
     SECTION("applyAdvancedSettingsForm unsets pins beyond the new valve count") {
         REQUIRE(settings.storeNumValves(4));
         REQUIRE(settings.storeValveActuatorGpioPins({
             GPIO_NUM_12, GPIO_NUM_13, GPIO_NUM_14, GPIO_NUM_15,
+            GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC,
+        }));
+        REQUIRE(settings.storeValveIndicatorGpioPins({
+            GPIO_NUM_20, GPIO_NUM_21, GPIO_NUM_22, GPIO_NUM_23,
             GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC,
         }));
 
@@ -350,6 +382,10 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
             {"gpio1", "13"},
             {"gpio2", "14"},
             {"gpio3", "15"},
+            {"valve_led_gpio0", "20"},
+            {"valve_led_gpio1", "21"},
+            {"valve_led_gpio2", "22"},
+            {"valve_led_gpio3", "23"},
         };
         REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
 
@@ -359,6 +395,13 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
         REQUIRE((*pins)[1] == GPIO_NUM_13);
         REQUIRE((*pins)[2] == GPIO_NUM_NC);
         REQUIRE((*pins)[3] == GPIO_NUM_NC);
+
+        const auto indicatorPins = settings.retrieveValveIndicatorGpioPins();
+        REQUIRE(indicatorPins.has_value());
+        REQUIRE((*indicatorPins)[0] == GPIO_NUM_20);
+        REQUIRE((*indicatorPins)[1] == GPIO_NUM_21);
+        REQUIRE((*indicatorPins)[2] == GPIO_NUM_NC);
+        REQUIRE((*indicatorPins)[3] == GPIO_NUM_NC);
     }
 
     SECTION("applyAdvancedSettingsForm requests a shutdown on success") {

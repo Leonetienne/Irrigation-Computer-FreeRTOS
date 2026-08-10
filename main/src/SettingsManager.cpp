@@ -115,6 +115,51 @@ std::expected<std::array<gpio_num_t, 8>, bool> SettingsManager::retrieveValveAct
     return pins;
 }
 
+bool SettingsManager::storeValveIndicatorGpioPins(const std::array<gpio_num_t, 8>& gpioPins) const noexcept {
+    return
+        i_nvs.setInt("valve_ind_0", packGpioPins(gpioPins.data())) &&
+        i_nvs.setInt("valve_ind_1", packGpioPins(gpioPins.data() + 4));
+}
+
+std::expected<std::array<gpio_num_t, 8>, bool> SettingsManager::retrieveValveIndicatorGpioPins() const noexcept {
+    int32_t word0{};
+    int32_t word1{};
+    const bool loaded =
+        i_nvs.getInt("valve_ind_0", word0) &&
+        i_nvs.getInt("valve_ind_1", word1);
+
+    if (!loaded) {
+        return std::unexpected(false);
+    }
+
+    std::array<gpio_num_t, 8> pins{};
+    unpackGpioPins(word0, pins.data());
+    unpackGpioPins(word1, pins.data() + 4);
+    return pins;
+}
+
+bool SettingsManager::storeWifiLedGpioPin(gpio_num_t gpioPin) const noexcept {
+    return i_nvs.setInt("wifi_led_gpio", static_cast<int32_t>(gpioPin));
+}
+
+std::expected<gpio_num_t, bool> SettingsManager::retrieveWifiLedGpioPin() const noexcept {
+    if (int32_t buf{}; i_nvs.getInt("wifi_led_gpio", buf)) {
+        return static_cast<gpio_num_t>(buf);
+    }
+    return std::unexpected(false);
+}
+
+bool SettingsManager::storeMqttLedGpioPin(gpio_num_t gpioPin) const noexcept {
+    return i_nvs.setInt("mqtt_led_gpio", static_cast<int32_t>(gpioPin));
+}
+
+std::expected<gpio_num_t, bool> SettingsManager::retrieveMqttLedGpioPin() const noexcept {
+    if (int32_t buf{}; i_nvs.getInt("mqtt_led_gpio", buf)) {
+        return static_cast<gpio_num_t>(buf);
+    }
+    return std::unexpected(false);
+}
+
 bool SettingsManager::storeRuntimeSafetyEnabled(bool enabled) const noexcept {
     return i_nvs.setInt("rt_safety_en", enabled ? 1 : 0);
 }

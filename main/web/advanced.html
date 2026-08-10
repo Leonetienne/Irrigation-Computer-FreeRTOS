@@ -33,7 +33,7 @@
         <div id="valve-gpio-fields"></div>
 
         <h2 style="margin-top:1.4rem">Status LEDs</h2>
-        <p class="hint">Not wired up yet.</p>
+        <p class="hint">GPIO pins are saved but not yet driven by any LED logic.</p>
 
         <div class="check-row">
             <input type="checkbox" id="disable_conn_leds" name="disable_conn_leds" value="1" disabled="">
@@ -45,25 +45,25 @@
         </div>
 
         <label for="wifi_led_gpio">WiFi OK LED - GPIO</label>
-        <input type="number" id="wifi_led_gpio" name="wifi_led_gpio" min="0" max="39" placeholder="not set" disabled="">
+        <input type="number" id="wifi_led_gpio" name="wifi_led_gpio" min="0" max="39" placeholder="not set">
         <label for="mqtt_led_gpio">MQTT OK LED - GPIO</label>
-        <input type="number" id="mqtt_led_gpio" name="mqtt_led_gpio" min="0" max="39" placeholder="not set" disabled="">
+        <input type="number" id="mqtt_led_gpio" name="mqtt_led_gpio" min="0" max="39" placeholder="not set">
         <label for="valve_led_gpio0">Valve 0 status LED - GPIO</label>
-        <input type="number" id="valve_led_gpio0" name="valve_led_gpio0" min="0" max="39" placeholder="not set" disabled="">
+        <input type="number" id="valve_led_gpio0" name="valve_led_gpio0" min="0" max="39" placeholder="not set">
         <label for="valve_led_gpio1">Valve 1 status LED - GPIO</label>
-        <input type="number" id="valve_led_gpio1" name="valve_led_gpio1" min="0" max="39" placeholder="not set" disabled="">
+        <input type="number" id="valve_led_gpio1" name="valve_led_gpio1" min="0" max="39" placeholder="not set">
         <label for="valve_led_gpio2">Valve 2 status LED - GPIO</label>
-        <input type="number" id="valve_led_gpio2" name="valve_led_gpio2" min="0" max="39" placeholder="not set" disabled="">
+        <input type="number" id="valve_led_gpio2" name="valve_led_gpio2" min="0" max="39" placeholder="not set">
         <label for="valve_led_gpio3">Valve 3 status LED - GPIO</label>
-        <input type="number" id="valve_led_gpio3" name="valve_led_gpio3" min="0" max="39" placeholder="not set" disabled="">
+        <input type="number" id="valve_led_gpio3" name="valve_led_gpio3" min="0" max="39" placeholder="not set">
         <label for="valve_led_gpio4">Valve 4 status LED - GPIO</label>
-        <input type="number" id="valve_led_gpio4" name="valve_led_gpio4" min="0" max="39" placeholder="not set" disabled="">
+        <input type="number" id="valve_led_gpio4" name="valve_led_gpio4" min="0" max="39" placeholder="not set">
         <label for="valve_led_gpio5">Valve 5 status LED - GPIO</label>
-        <input type="number" id="valve_led_gpio5" name="valve_led_gpio5" min="0" max="39" placeholder="not set" disabled="">
+        <input type="number" id="valve_led_gpio5" name="valve_led_gpio5" min="0" max="39" placeholder="not set">
         <label for="valve_led_gpio6">Valve 6 status LED - GPIO</label>
-        <input type="number" id="valve_led_gpio6" name="valve_led_gpio6" min="0" max="39" placeholder="not set" disabled="">
+        <input type="number" id="valve_led_gpio6" name="valve_led_gpio6" min="0" max="39" placeholder="not set">
         <label for="valve_led_gpio7">Valve 7 status LED - GPIO</label>
-        <input type="number" id="valve_led_gpio7" name="valve_led_gpio7" min="0" max="39" placeholder="not set" disabled="">
+        <input type="number" id="valve_led_gpio7" name="valve_led_gpio7" min="0" max="39" placeholder="not set">
 
         <button type="submit">Save &amp; restart</button>
     </form>
@@ -121,6 +121,8 @@ async function loadAdvanced() {
             document.getElementById('num_valves').value = value;
         } else if ((match = key.match(/^gpio(\d+)$/))) {
             addGpioField(valveFields, key, 'Valve ' + match[1] + ' - GPIO', value, Number(match[1]) >= numValves);
+        } else if (key === 'wifi_led_gpio' || key === 'mqtt_led_gpio' || key.match(/^valve_led_gpio\d+$/)) {
+            document.getElementById(key).value = value;
         }
     });
 }

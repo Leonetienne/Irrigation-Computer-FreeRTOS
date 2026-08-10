@@ -16,14 +16,14 @@ namespace {
 
 std::array<Valve, 8> makeValves(GpioStub& gpioStub, TimeStub& timeStub, GpioPinRegister& pr) {
     return {
-        Valve(GPIO_NUM_0, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_1, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
-        Valve(GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_0, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_1, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
+        Valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr),
     };
 }
 

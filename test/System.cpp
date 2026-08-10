@@ -66,6 +66,23 @@ TEST_CASE("System: init", "[System]") {
         REQUIRE(valveGroup.isValveOperable(1));
         REQUIRE_FALSE(valveGroup.isValveOperable(2));
     }
+
+    SECTION("wires configured valve status indicator pins into the valve group") {
+        REQUIRE(settings.storeNumValves(2));
+        REQUIRE(settings.storeValveActuatorGpioPins({
+            GPIO_NUM_4, GPIO_NUM_5, GPIO_NUM_NC, GPIO_NUM_NC,
+            GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC
+        }));
+        REQUIRE(settings.storeValveIndicatorGpioPins({
+            GPIO_NUM_20, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC,
+            GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC
+        }));
+
+        system.init();
+        REQUIRE(valveGroup.open(0));
+
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_20) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
 }
 
 TEST_CASE("System: free", "[System]") {

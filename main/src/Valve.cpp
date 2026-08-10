@@ -1,19 +1,22 @@
 #include "../include/Valve.h"
 
 Valve::Valve(
-    gpio_num_t gpioPinNumber,
+    gpio_num_t actuatorGpioPinNumber,
+    gpio_num_t indicatorGpioPinNumber,
     IGpio& i_gpio,
     const ITime& i_time,
     GpioPinRegister& pinRegister
 ) noexcept:
-    gpioPin ( pinRegister, i_gpio, gpioPinNumber),
+    actuatorGpioPin ( pinRegister, i_gpio, actuatorGpioPinNumber),
+    indicatorGpioPin ( pinRegister, i_gpio, indicatorGpioPinNumber),
     i_time (i_time)
 { }
 
 Valve::Valve(Valve &&other) noexcept :
     isOpen (other.isOpen),
     isInitialized (other.isInitialized),
-    gpioPin (std::move(other.gpioPin)),
+    actuatorGpioPin (std::move(other.actuatorGpioPin)),
+    indicatorGpioPin (std::move(other.indicatorGpioPin)),
     i_time (std::move(other.i_time))
 {
     other.isInitialized = false;
@@ -34,8 +37,15 @@ bool Valve::initialize() noexcept {
         return false;
     }
 
-    if (!gpioPin.initialize()) {
+    if (!actuatorGpioPin.initialize()) {
         return false;
+    }
+
+    // No indicator gpio is no fail as these are optional
+    if (indicatorGpioPin.getGpioNum() != GPIO_NUM_NC) {
+        if (!indicatorGpioPin.initialize()) {
+            return false;
+        }
     }
 
     isInitialized = true;
@@ -47,7 +57,12 @@ bool Valve::free() noexcept {
         // We set this to uninitialized right away to prevent an aborted free-call resulting in isInitialized still being true
         isInitialized = false;
 
-        if (!gpioPin.free()) {
+        if (!actuatorGpioPin.free()) {
+            return false;
+        }
+
+        // Indicator pins are optional
+        if (indicatorGpioPin.isReady() && !indicatorGpioPin.free()) {
             return false;
         }
 
@@ -68,7 +83,8 @@ Valve& Valve::operator=(Valve&& other) noexcept {
     // i_time is left untouched (reference member, bound at construction)
     isOpen = other.isOpen;
     isInitialized = other.isInitialized;
-    gpioPin = std::move(other.gpioPin);
+    actuatorGpioPin = std::move(other.actuatorGpioPin);
+    indicatorGpioPin = std::move(other.indicatorGpioPin);
     lastOpenedAt = other.lastOpenedAt;
 
     other.isInitialized = false;
@@ -105,8 +121,14 @@ bool Valve::open() noexcept {
     }
 
     isOpen = true;
+
+    // Turn status LED on
+    if (indicatorGpioPin.isReady()) {
+        indicatorGpioPin.setState(PIN_STATE_DIGITAL::HIGH);
+    }
+
     lastOpenedAt = i_time.getTime();
-    return gpioPin.setState(PIN_STATE_DIGITAL::HIGH); // Valve is OPEN when pin is HIGH (transistor opens)
+    return actuatorGpioPin.setState(PIN_STATE_DIGITAL::HIGH); // Valve is OPEN when pin is HIGH (transistor opens)
 }
 
 bool Valve::close() noexcept {
@@ -119,9 +141,13 @@ bool Valve::close() noexcept {
         return true;
     }
 
+    // Turn status LED off
+    if (indicatorGpioPin.isReady()) {
+        indicatorGpioPin.setState(PIN_STATE_DIGITAL::LOW);
+    }
 
     isOpen = false;
-    return gpioPin.setState(PIN_STATE_DIGITAL::LOW); // Valve is CLOSED when pin is LOW (transistor closes)
+    return actuatorGpioPin.setState(PIN_STATE_DIGITAL::LOW); // Valve is CLOSED when pin is LOW (transistor closes)
 }
 
 time_t Valve::getLastOpenedAtTime() const noexcept {
@@ -129,5 +155,5 @@ time_t Valve::getLastOpenedAtTime() const noexcept {
 }
 
 gpio_num_t Valve::getPinNumber() const noexcept {
-    return gpioPin.getGpioNum();
+    return actuatorGpioPin.getGpioNum();
 }

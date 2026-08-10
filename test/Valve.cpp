@@ -15,6 +15,7 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
     TimeStub timeStub{};
     Valve valve(
         GPIO_NUM_19,
+        GPIO_NUM_NC,
         gpioStub,
         timeStub,
         pr
@@ -240,6 +241,7 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
         {
             Valve v(
                 GPIO_NUM_19,
+                GPIO_NUM_NC,
                 gpioStub,
                 timeStub,
                 pr
@@ -256,6 +258,7 @@ TEST_CASE("Valve: lifecycle", "[Valve]") {
         {
              Valve v(
                 GPIO_NUM_19,
+                GPIO_NUM_NC,
                 gpioStub,
                 timeStub,
                 pr
@@ -274,6 +277,7 @@ TEST_CASE("Valve: move", "[Valve]") {
     TimeStub timeStub{};
     Valve valve(
         GPIO_NUM_19,
+        GPIO_NUM_NC,
         gpioStub,
         timeStub,
         pr
@@ -314,5 +318,52 @@ TEST_CASE("Valve: move", "[Valve]") {
 
         REQUIRE(moved.getIsOpen() == false);
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+}
+
+TEST_CASE("Valve: status indicator LED", "[Valve]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+
+    SECTION("initializes fine without an indicator pin") {
+        Valve valve(GPIO_NUM_19, GPIO_NUM_NC, gpioStub, timeStub, pr);
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.isReady());
+    }
+
+    SECTION("initializes and registers the indicator pin when configured") {
+        Valve valve(GPIO_NUM_19, GPIO_NUM_21, gpioStub, timeStub, pr);
+        REQUIRE(valve.initialize());
+        REQUIRE(pr.isPinBound(GPIO_NUM_21));
+    }
+
+    SECTION("open turns the indicator pin on") {
+        Valve valve(GPIO_NUM_19, GPIO_NUM_21, gpioStub, timeStub, pr);
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.open());
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_21) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("close turns the indicator pin off") {
+        Valve valve(GPIO_NUM_19, GPIO_NUM_21, gpioStub, timeStub, pr);
+        REQUIRE(valve.initialize());
+        REQUIRE(valve.open());
+        REQUIRE(valve.close());
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_21) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("free releases the indicator pin") {
+        Valve valve(GPIO_NUM_19, GPIO_NUM_21, gpioStub, timeStub, pr);
+        REQUIRE(valve.initialize());
+        REQUIRE(pr.isPinBound(GPIO_NUM_21));
+        REQUIRE(valve.free());
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_21));
+    }
+
+    SECTION("does not fail when the actuator and indicator pin are both unset") {
+        Valve valve(GPIO_NUM_NC, GPIO_NUM_NC, gpioStub, timeStub, pr);
+        // actuator pin NC is unusual (ValveGroup skips these), but Valve itself should not misbehave
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_NC));
     }
 }

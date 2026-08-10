@@ -13,7 +13,8 @@
 class Valve {
 public:
     Valve(
-        gpio_num_t gpioPinNumber,
+        gpio_num_t actuatorGpioPinNumber,
+        gpio_num_t indicatorGpioPinNumber,
         IGpio& gpio,
         const ITime& time,
         GpioPinRegister& pinRegister
@@ -80,7 +81,8 @@ public:
 private:
     bool isOpen = false;
     bool isInitialized = false;
-    GpioDigitalWritePin gpioPin;
+    GpioDigitalWritePin actuatorGpioPin;
+    GpioDigitalWritePin indicatorGpioPin;
     const ITime& i_time;
     time_t lastOpenedAt = 0;
 };

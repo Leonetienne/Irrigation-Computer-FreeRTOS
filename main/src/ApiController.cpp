@@ -264,6 +264,18 @@ std::string ApiController::buildAdvancedSettingsReport(const SettingsManager& se
         appendGpioField(report, "gpio" + std::to_string(i), pin);
     }
 
+    const auto indicatorPins = settings.retrieveValveIndicatorGpioPins();
+    for (std::size_t i = 0; i < 8; ++i) {
+        const gpio_num_t pin = indicatorPins.has_value() ? (*indicatorPins)[i] : GPIO_NUM_NC;
+        appendGpioField(report, "valve_led_gpio" + std::to_string(i), pin);
+    }
+
+    const auto wifiLedPin = settings.retrieveWifiLedGpioPin();
+    appendGpioField(report, "wifi_led_gpio", wifiLedPin.value_or(GPIO_NUM_NC));
+
+    const auto mqttLedPin = settings.retrieveMqttLedGpioPin();
+    appendGpioField(report, "mqtt_led_gpio", mqttLedPin.value_or(GPIO_NUM_NC));
+
     return report;
 }
 
@@ -280,13 +292,25 @@ bool ApiController::applyAdvancedSettingsForm(
 
     // pins beyond the configured valve count are unset, not just left disabled client-side
     std::array<gpio_num_t, 8> pins{};
+    std::array<gpio_num_t, 8> indicatorPins{};
     for (std::size_t i = 0; i < 8; ++i) {
-        pins[i] = static_cast<int32_t>(i) < numValves
-            ? parseGpioField(form, "gpio" + std::to_string(i))
-            : GPIO_NUM_NC;
+        if (static_cast<int32_t>(i) < numValves) {
+            pins[i] = parseGpioField(form, "gpio" + std::to_string(i));
+            indicatorPins[i] = parseGpioField(form, "valve_led_gpio" + std::to_string(i));
+        } else {
+            pins[i] = GPIO_NUM_NC;
+            indicatorPins[i] = GPIO_NUM_NC;
+        }
     }
 
-    if (!settings.storeNumValves(numValves) || !settings.storeValveActuatorGpioPins(pins)) {
+    const gpio_num_t wifiLedPin = parseGpioField(form, "wifi_led_gpio");
+    const gpio_num_t mqttLedPin = parseGpioField(form, "mqtt_led_gpio");
+
+    if (!settings.storeNumValves(numValves) ||
+        !settings.storeValveActuatorGpioPins(pins) ||
+        !settings.storeValveIndicatorGpioPins(indicatorPins) ||
+        !settings.storeWifiLedGpioPin(wifiLedPin) ||
+        !settings.storeMqttLedGpioPin(mqttLedPin)) {
         return false;
     }
 

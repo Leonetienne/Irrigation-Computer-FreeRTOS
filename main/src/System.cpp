@@ -69,23 +69,28 @@ void System::init() noexcept {
     // no valve is wired up until the user configures count/pins via the advanced settings page
     const int32_t numValves = settings.retrieveNumValves().value_or(0);
     const auto configuredPins = settings.retrieveValveActuatorGpioPins();
+    const auto configuredIndicatorPins = settings.retrieveValveIndicatorGpioPins();
 
     std::array<gpio_num_t, 8> valvePins{};
+    std::array<gpio_num_t, 8> valveIndicatorPins{};
     for (std::size_t i = 0; i < valvePins.size(); ++i) {
         valvePins[i] = configuredPins.has_value() && static_cast<int32_t>(i) < numValves
             ? (*configuredPins)[i]
             : GPIO_NUM_NC;
+        valveIndicatorPins[i] = configuredIndicatorPins.has_value() && static_cast<int32_t>(i) < numValves
+            ? (*configuredIndicatorPins)[i]
+            : GPIO_NUM_NC;
     }
 
     valveGroup.initialize({
-        Valve(valvePins[0], gpio, i_time, gpioPinRegister),
-        Valve(valvePins[1], gpio, i_time, gpioPinRegister),
-        Valve(valvePins[2], gpio, i_time, gpioPinRegister),
-        Valve(valvePins[3], gpio, i_time, gpioPinRegister),
-        Valve(valvePins[4], gpio, i_time, gpioPinRegister),
-        Valve(valvePins[5], gpio, i_time, gpioPinRegister),
-        Valve(valvePins[6], gpio, i_time, gpioPinRegister),
-        Valve(valvePins[7], gpio, i_time, gpioPinRegister)
+        Valve(valvePins[0], valveIndicatorPins[0], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[1], valveIndicatorPins[1], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[2], valveIndicatorPins[2], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[3], valveIndicatorPins[3], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[4], valveIndicatorPins[4], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[5], valveIndicatorPins[5], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[6], valveIndicatorPins[6], gpio, i_time, gpioPinRegister),
+        Valve(valvePins[7], valveIndicatorPins[7], gpio, i_time, gpioPinRegister)
     });
 
     isInitialized = true;

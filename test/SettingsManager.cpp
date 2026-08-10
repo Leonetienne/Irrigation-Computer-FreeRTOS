@@ -127,6 +127,82 @@ TEST_CASE("SettingsManager: valve actuator gpio pins", "[SettingsManager]") {
     }
 }
 
+TEST_CASE("SettingsManager: valve indicator gpio pins", "[SettingsManager]") {
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+
+    SECTION("round trip stores and retrieves all 8 pins") {
+        constexpr std::array<gpio_num_t, 8> pins = {
+            GPIO_NUM_20, GPIO_NUM_21, GPIO_NUM_NC, GPIO_NUM_NC,
+            GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC,
+        };
+        REQUIRE(settings.storeValveIndicatorGpioPins(pins));
+
+        const auto result = settings.retrieveValveIndicatorGpioPins();
+        REQUIRE(result.has_value());
+        REQUIRE(*result == pins);
+    }
+
+    SECTION("retrieve fails when nothing was stored") {
+        REQUIRE_FALSE(settings.retrieveValveIndicatorGpioPins().has_value());
+    }
+
+    SECTION("is independent from the actuator gpio pins") {
+        REQUIRE(settings.storeValveActuatorGpioPins({
+            GPIO_NUM_0, GPIO_NUM_1, GPIO_NUM_NC, GPIO_NUM_NC,
+            GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC,
+        }));
+        REQUIRE(settings.storeValveIndicatorGpioPins({
+            GPIO_NUM_20, GPIO_NUM_21, GPIO_NUM_NC, GPIO_NUM_NC,
+            GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC,
+        }));
+
+        const auto actuator = settings.retrieveValveActuatorGpioPins();
+        const auto indicator = settings.retrieveValveIndicatorGpioPins();
+        REQUIRE((*actuator)[0] == GPIO_NUM_0);
+        REQUIRE((*indicator)[0] == GPIO_NUM_20);
+    }
+}
+
+TEST_CASE("SettingsManager: connectivity status led gpio pins", "[SettingsManager]") {
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+
+    SECTION("round trip stores and retrieves the wifi led pin") {
+        REQUIRE(settings.storeWifiLedGpioPin(GPIO_NUM_2));
+
+        const auto result = settings.retrieveWifiLedGpioPin();
+        REQUIRE(result.has_value());
+        REQUIRE(*result == GPIO_NUM_2);
+    }
+
+    SECTION("retrieve fails when the wifi led pin was never stored") {
+        REQUIRE_FALSE(settings.retrieveWifiLedGpioPin().has_value());
+    }
+
+    SECTION("round trip stores and retrieves the mqtt led pin") {
+        REQUIRE(settings.storeMqttLedGpioPin(GPIO_NUM_3));
+
+        const auto result = settings.retrieveMqttLedGpioPin();
+        REQUIRE(result.has_value());
+        REQUIRE(*result == GPIO_NUM_3);
+    }
+
+    SECTION("retrieve fails when the mqtt led pin was never stored") {
+        REQUIRE_FALSE(settings.retrieveMqttLedGpioPin().has_value());
+    }
+
+    SECTION("round trip preserves the negative NC sentinel") {
+        REQUIRE(settings.storeWifiLedGpioPin(GPIO_NUM_NC));
+        REQUIRE(settings.storeMqttLedGpioPin(GPIO_NUM_NC));
+
+        REQUIRE(*settings.retrieveWifiLedGpioPin() == GPIO_NUM_NC);
+        REQUIRE(*settings.retrieveMqttLedGpioPin() == GPIO_NUM_NC);
+    }
+}
+
 TEST_CASE("SettingsManager: safety flags", "[SettingsManager]") {
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));

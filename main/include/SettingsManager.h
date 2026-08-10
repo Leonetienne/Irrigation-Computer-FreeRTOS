@@ -57,6 +57,30 @@ public:
     [[nodiscard]] std::expected<std::array<gpio_num_t, 8>, bool> retrieveValveActuatorGpioPins() const noexcept;
 
     /**
+     * Stores which pin drives each valve's status LED, packed into 2 int32 nvs entries (4 pins/int32)
+     * @param gpioPins pin for valve 0..7, GPIO_NUM_NC if that valve has no status LED
+     * @return Success state
+     */
+    bool storeValveIndicatorGpioPins(const std::array<gpio_num_t, 8>& gpioPins) const noexcept;
+
+    /**
+     * @return pin for valve 0..7, or false
+     */
+    [[nodiscard]] std::expected<std::array<gpio_num_t, 8>, bool> retrieveValveIndicatorGpioPins() const noexcept;
+
+    /**
+     * @return Success state
+     */
+    bool storeWifiLedGpioPin(gpio_num_t gpioPin) const noexcept;
+    [[nodiscard]] std::expected<gpio_num_t, bool> retrieveWifiLedGpioPin() const noexcept;
+
+    /**
+     * @return Success state
+     */
+    bool storeMqttLedGpioPin(gpio_num_t gpioPin) const noexcept;
+    [[nodiscard]] std::expected<gpio_num_t, bool> retrieveMqttLedGpioPin() const noexcept;
+
+    /**
      * @return Success state
      */
     bool storeRuntimeSafetyEnabled(bool enabled) const noexcept;
