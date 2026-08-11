@@ -2,12 +2,17 @@
 #define IRRIGATION_COMPUTER_TESTS_WIFIMANAGERESP32_H
 
 #include "hal/IWifiManager.h"
+#include "hal/IGpio.h"
+#include "hal/ITime.h"
+#include "GpioPinRegister.h"
+#include "platform/GpioDigitalWritePin.h"
 #include "esp_event.h"
 #include "esp_netif_types.h"
+#include <optional>
 
 class WifiManagerEsp32 : public IWifiManager {
 public:
-    WifiManagerEsp32() = default;
+    WifiManagerEsp32(IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
     WifiManagerEsp32(const WifiManagerEsp32&) = delete;
     WifiManagerEsp32& operator=(const WifiManagerEsp32&) = delete;
     WifiManagerEsp32(WifiManagerEsp32&&) = delete;
@@ -58,13 +63,23 @@ public:
      */
     void setOnFailed(std::function<void()> callback) noexcept override;
 
+    bool setIndicatorGpioPin(gpio_num_t pin) noexcept override;
+    void updateOnboardingModeLedBlink() noexcept override;
+
 private:
     /**
      * Static esp-idf event callback
      */
     static void eventHandler(void* arg, esp_event_base_t base, int32_t id, void* data) noexcept;
 
+    void setIndicatorState(PIN_STATE_DIGITAL pinState) noexcept;
+
     static constexpr int MAX_CONNECT_RETRIES = 5;
+    static constexpr int64_t BLINK_INTERVAL_MS = 500;
+
+    IGpio& gpio;
+    GpioPinRegister& pinRegister;
+    const ITime& i_time;
 
     bool isInitialized = false;
     bool eventHandlersRegistered = false;
@@ -74,6 +89,9 @@ private:
     std::function<void()> onDisconnected;
     std::function<void()> onFailed;
     esp_netif_t* netif = nullptr;
+
+    std::optional<GpioDigitalWritePin> indicatorPin;
+    int64_t lastBlinkToggleAtMs = 0;
 };
 
 

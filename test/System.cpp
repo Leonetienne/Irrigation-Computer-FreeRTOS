@@ -19,7 +19,7 @@ TEST_CASE("System: init", "[System]") {
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan{};
+    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
@@ -38,6 +38,21 @@ TEST_CASE("System: init", "[System]") {
         REQUIRE(httpServer.test_getBeginCallCount() == 1);
         REQUIRE(httpServer.test_isRunning());
         REQUIRE(valveGroup.isReady());
+    }
+
+    SECTION("configures the wifi status led from settings") {
+        REQUIRE(settings.storeWifiLedGpioPin(GPIO_NUM_2));
+
+        system.init();
+
+        REQUIRE(pr.isPinBound(GPIO_NUM_2));
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("leaves the wifi status led unconfigured when no pin was ever stored") {
+        system.init();
+
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_2));
     }
 
     SECTION("with stored wifi credentials waits for connection without starting the http server yet") {
@@ -91,7 +106,7 @@ TEST_CASE("System: free", "[System]") {
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan{};
+    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
@@ -128,7 +143,7 @@ TEST_CASE("System: onWifiConnected", "[System]") {
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan{};
+    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
@@ -155,7 +170,7 @@ TEST_CASE("System: onWifiDisconnected", "[System]") {
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan{};
+    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
@@ -197,7 +212,7 @@ TEST_CASE("System: onWifiFailed defers the onboarding fallback to update()", "[S
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan{};
+    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
@@ -239,7 +254,7 @@ TEST_CASE("System: update polls valve auto-close timeouts", "[System]") {
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan{};
+    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
@@ -264,6 +279,56 @@ TEST_CASE("System: update polls valve auto-close timeouts", "[System]") {
     system.update();
 
     REQUIRE(valveGroup.getValveOpenState(0) == false);
+}
+
+TEST_CASE("System: update polls the onboarding-mode led blink only during onboarding", "[System]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
+    HttpServerStub httpServer{};
+    StateMachine stateMachine{};
+    SettingsManager settings(nvs);
+    ValveGroup valveGroup(timeStub, settings);
+    MqttStub mqttStub{};
+    MqttSync mqttSync(mqttStub, valveGroup, settings);
+
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
+
+    SECTION("blinks the led while in onboarding mode") {
+        REQUIRE(settings.storeWifiLedGpioPin(GPIO_NUM_2));
+        timeStub.setStubbedMillis(0);
+
+        system.init(); // no stored credentials -> WIFI_ONBOARDING
+        REQUIRE(stateMachine.getState() == STATE::WIFI_ONBOARDING);
+
+        timeStub.setStubbedMillis(500);
+        system.update();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        timeStub.setStubbedMillis(1000);
+        system.update();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("does not blink the led outside onboarding mode") {
+        REQUIRE(settings.storeWifiLedGpioPin(GPIO_NUM_2));
+        REQUIRE(settings.storeWifiCredentials({"my-ssid", "my-password"}));
+        timeStub.setStubbedMillis(0);
+
+        system.init(); // stored credentials -> WAIT_WIFI_CONNECTION, not onboarding
+        REQUIRE(stateMachine.getState() == STATE::WAIT_WIFI_CONNECTION);
+
+        timeStub.setStubbedMillis(500);
+        system.update();
+        timeStub.setStubbedMillis(1000);
+        system.update();
+
+        // stays at its initial LOW - update() never polled the blink outside onboarding
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
 }
 
 TEST_CASE("SystemStub: getSystem wires a usable System", "[System][SystemStub]") {

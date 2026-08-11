@@ -22,6 +22,11 @@ public:
     * @return How many seconds have elapsed since reference
     */
     [[nodiscard]] int getSecondsSince(const time_t &since) const noexcept override;
+
+    /**
+     * @return A monotonic millisecond timestamp
+     */
+    [[nodiscard]] int64_t getMillis() const noexcept override;
 };
 
 

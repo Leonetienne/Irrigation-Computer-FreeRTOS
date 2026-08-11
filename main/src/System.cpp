@@ -53,6 +53,7 @@ void System::init() noexcept {
     wifiMan.setOnFailed([this]() { onWifiFailed(); });
 
     mqttSync.begin();
+    wifiMan.setIndicatorGpioPin(settings.retrieveWifiLedGpioPin().value_or(GPIO_NUM_NC));
 
     const auto storedCredentials = settings.retrieveWifiCredentials();
 
@@ -137,6 +138,10 @@ void System::beforeShutdown() noexcept {
 void System::update() noexcept {
     valveGroup.autoCloseValvesAfterTimeoutPoll();
     mqttSync.pollPublishStateChanges();
+
+    if (stateMachine.getState() == STATE::WIFI_ONBOARDING) {
+        wifiMan.updateOnboardingModeLedBlink();
+    }
 
     if (wifiConnectFailed) {
         wifiConnectFailed = false;

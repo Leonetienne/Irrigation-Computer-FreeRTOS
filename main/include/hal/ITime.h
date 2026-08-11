@@ -2,6 +2,7 @@
 #define IRRIGATION_COMPUTER_TESTS_ITIME_H
 
 #include "compat/time_t.h"
+#include <cstdint>
 
 /**
  * Abstract time interface
@@ -20,6 +21,11 @@ public:
      * @return How many seconds have elapsed since reference
      */
     [[nodiscard]] virtual int getSecondsSince(const time_t& since) const noexcept = 0;
+
+    /**
+     * @return A monotonic millisecond timestamp
+     */
+    [[nodiscard]] virtual int64_t getMillis() const noexcept = 0;
 };
 
 

@@ -1,8 +1,14 @@
 #include <catch2/catch_test_macros.hpp>
 #include "test/stubs/WifiManagerStub.h"
+#include "test/stubs/GpioStub.h"
+#include "test/stubs/TimeStub.h"
+#include "GpioPinRegister.h"
 
 TEST_CASE("WifiManagerStub", "[WifiManagerStub]") {
-    WifiManagerStub stub;
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+    WifiManagerStub stub(gpioStub, pr, timeStub);
 
     SECTION("default state is Disconnected") {
         REQUIRE(stub.getState() == WifiConnectionState::Disconnected);
@@ -76,5 +82,99 @@ TEST_CASE("WifiManagerStub", "[WifiManagerStub]") {
         stub.setOnFailed([&called]() { called = true; });
         stub.simulateFailed();
         REQUIRE(called);
+    }
+}
+
+TEST_CASE("WifiManagerStub: status indicator LED", "[WifiManagerStub]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+    WifiManagerStub stub(gpioStub, pr, timeStub);
+
+    SECTION("setIndicatorGpioPin succeeds and defaults to LOW") {
+        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("setIndicatorGpioPin with GPIO_NUM_NC succeeds without binding a pin") {
+        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_NC));
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_2));
+    }
+
+    SECTION("setIndicatorGpioPin fails when called twice") {
+        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        REQUIRE_FALSE(stub.setIndicatorGpioPin(GPIO_NUM_3));
+    }
+
+    SECTION("goes HIGH on simulateConnected") {
+        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        stub.simulateConnected();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("goes LOW on simulateDisconnected after having been connected") {
+        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        stub.simulateConnected();
+        stub.simulateDisconnected();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("goes LOW on simulateFailed after having been connected") {
+        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        stub.simulateConnected();
+        stub.simulateFailed();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("goes LOW on free after having been connected") {
+        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        stub.simulateConnected();
+        stub.free();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("updateOnboardingModeLedBlink does nothing without a configured pin") {
+        timeStub.setStubbedMillis(10000);
+        stub.updateOnboardingModeLedBlink();
+        SUCCEED("no crash, nothing to assert without a pin");
+    }
+
+    SECTION("updateOnboardingModeLedBlink does not toggle before 500ms elapse") {
+        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        timeStub.setStubbedMillis(0);
+
+        timeStub.setStubbedMillis(400);
+        stub.updateOnboardingModeLedBlink();
+
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("updateOnboardingModeLedBlink toggles once 500ms have elapsed") {
+        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        timeStub.setStubbedMillis(0);
+
+        timeStub.setStubbedMillis(500);
+        stub.updateOnboardingModeLedBlink();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        timeStub.setStubbedMillis(1000);
+        stub.updateOnboardingModeLedBlink();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+        timeStub.setStubbedMillis(1500);
+        stub.updateOnboardingModeLedBlink();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("updateOnboardingModeLedBlink does not toggle twice within the same 500ms window") {
+        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        timeStub.setStubbedMillis(0);
+
+        timeStub.setStubbedMillis(500);
+        stub.updateOnboardingModeLedBlink();
+        stub.updateOnboardingModeLedBlink();
+        stub.updateOnboardingModeLedBlink();
+
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 }

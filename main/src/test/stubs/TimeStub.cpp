@@ -15,3 +15,11 @@ int TimeStub::getSecondsSince(const time_t& since) const noexcept {
 void TimeStub::setStubbedTime(time_t stubbedTime) noexcept {
     this->stubbedCurrentTime = stubbedTime;
 }
+
+int64_t TimeStub::getMillis() const noexcept {
+    return this->stubbedCurrentMillis;
+}
+
+void TimeStub::setStubbedMillis(int64_t stubbedMillis) noexcept {
+    this->stubbedCurrentMillis = stubbedMillis;
+}

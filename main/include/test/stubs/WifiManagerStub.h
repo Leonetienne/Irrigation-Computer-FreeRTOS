@@ -2,11 +2,16 @@
 #define IRRIGATION_COMPUTER_TESTS_WIFIMANAGERSTUB_H
 
 #include "hal/IWifiManager.h"
+#include "hal/IGpio.h"
+#include "hal/ITime.h"
+#include "GpioPinRegister.h"
+#include "platform/GpioDigitalWritePin.h"
+#include <optional>
 #include <string>
 
 class WifiManagerStub : public IWifiManager {
 public:
-    WifiManagerStub() = default;
+    WifiManagerStub(IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
     WifiManagerStub(const WifiManagerStub&) = delete;
     WifiManagerStub& operator=(const WifiManagerStub&) = delete;
     WifiManagerStub(WifiManagerStub&&) noexcept;
@@ -53,6 +58,9 @@ public:
      */
     void setOnFailed(std::function<void()> callback) noexcept override;
 
+    bool setIndicatorGpioPin(gpio_num_t pin) noexcept override;
+    void updateOnboardingModeLedBlink() noexcept override;
+
     /**
      * fires callbacks, simulates a real connect/disconnect/failure event
      */
@@ -72,6 +80,14 @@ public:
     [[nodiscard]] int getBeginOnboardingWifiCallCount() const;
 
 private:
+    void setIndicatorState(PIN_STATE_DIGITAL pinState) noexcept;
+
+    static constexpr int64_t BLINK_INTERVAL_MS = 500;
+
+    IGpio& gpio;
+    GpioPinRegister& pinRegister;
+    const ITime& i_time;
+
     WifiConnectionState state = WifiConnectionState::Disconnected;
     std::function<void()> onConnected;
     std::function<void()> onDisconnected;
@@ -81,6 +97,9 @@ private:
     std::string lastPassword;
     int beginUserWifiCallCount = 0;
     int beginOnboardingWifiCallCount = 0;
+
+    std::optional<GpioDigitalWritePin> indicatorPin;
+    int64_t lastBlinkToggleAtMs = 0;
 };
 
 #endif //IRRIGATION_COMPUTER_TESTS_WIFIMANAGERSTUB_H

@@ -15,9 +15,9 @@ System& getSystem() noexcept {
     static GpioStub gpio;
     static TimeStub time;
     static NVSStub nvs;
-    static WifiManagerStub wifiMan;
-    static MqttStub mqtt;
     static GpioPinRegister gpioPinRegister;
+    static WifiManagerStub wifiMan(gpio, gpioPinRegister, time);
+    static MqttStub mqtt;
     static StateMachine stateMachine;
     static SettingsManager settings(nvs);
     static ValveGroup valveGroup(time, settings);

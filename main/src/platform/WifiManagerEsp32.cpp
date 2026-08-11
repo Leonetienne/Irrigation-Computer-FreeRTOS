@@ -9,6 +9,12 @@
 
 static const char* LOG_TAG = "WifiManagerEsp32";
 
+WifiManagerEsp32::WifiManagerEsp32(IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept :
+    gpio(gpio),
+    pinRegister(pinRegister),
+    i_time(i_time)
+{ }
+
 WifiManagerEsp32::~WifiManagerEsp32() noexcept {
     if (isInitialized) {
         WifiManagerEsp32::free();
@@ -180,6 +186,7 @@ bool WifiManagerEsp32::free() noexcept {
     eventHandlersRegistered = false;
     state = WifiConnectionState::Disconnected;
     connectFailureCount = 0;
+    setIndicatorState(PIN_STATE_DIGITAL::LOW);
 
     return success;
 }
@@ -200,6 +207,47 @@ void WifiManagerEsp32::setOnFailed(std::function<void()> callback) noexcept {
     onFailed = std::move(callback);
 }
 
+bool WifiManagerEsp32::setIndicatorGpioPin(gpio_num_t pin) noexcept {
+    if (indicatorPin.has_value()) {
+        return false;
+    }
+    if (pin == GPIO_NUM_NC) {
+        return true;
+    }
+
+    indicatorPin.emplace(pinRegister, gpio, pin);
+    if (!indicatorPin->initialize()) {
+        indicatorPin.reset();
+        return false;
+    }
+
+    indicatorPin->setState(PIN_STATE_DIGITAL::LOW);
+    lastBlinkToggleAtMs = i_time.getMillis();
+    return true;
+}
+
+void WifiManagerEsp32::updateOnboardingModeLedBlink() noexcept {
+    if (!indicatorPin.has_value() || !indicatorPin->isReady()) {
+        return;
+    }
+
+    const int64_t now = i_time.getMillis();
+    if (now - lastBlinkToggleAtMs < BLINK_INTERVAL_MS) {
+        return;
+    }
+
+    lastBlinkToggleAtMs = now;
+    setIndicatorState(
+        indicatorPin->getState() == PIN_STATE_DIGITAL::HIGH ? PIN_STATE_DIGITAL::LOW : PIN_STATE_DIGITAL::HIGH
+    );
+}
+
+void WifiManagerEsp32::setIndicatorState(PIN_STATE_DIGITAL pinState) noexcept {
+    if (indicatorPin.has_value()) {
+        indicatorPin->setState(pinState);
+    }
+}
+
 void WifiManagerEsp32::eventHandler(
     void* arg,
     esp_event_base_t base,
@@ -213,6 +261,7 @@ void WifiManagerEsp32::eventHandler(
         esp_wifi_connect();
 
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
+        self->setIndicatorState(PIN_STATE_DIGITAL::LOW);
         const bool wasConnected = self->state == WifiConnectionState::Connected;
 
         if (wasConnected) {
@@ -245,6 +294,7 @@ void WifiManagerEsp32::eventHandler(
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         self->state = WifiConnectionState::Connected;
         self->connectFailureCount = 0;
+        self->setIndicatorState(PIN_STATE_DIGITAL::HIGH);
         const auto* event = static_cast<ip_event_got_ip_t*>(data);
         ESP_LOGI(LOG_TAG, "connected, got ip: " IPSTR, IP2STR(&event->ip_info.ip));
 
