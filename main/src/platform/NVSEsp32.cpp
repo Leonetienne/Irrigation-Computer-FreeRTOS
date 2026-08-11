@@ -90,3 +90,16 @@ bool NVSEsp32::getString(const char* key, char* outValue) const noexcept {
     size_t length = NVS_MAX_STRING_LENGTH + 1;
     return nvs_get_str(handle, key, outValue, &length) == ESP_OK;
 }
+
+bool NVSEsp32::eraseKey(const char* key) noexcept {
+    if (!isInitialized) {
+        return false;
+    }
+
+    const esp_err_t result = nvs_erase_key(handle, key);
+    if (result != ESP_OK && result != ESP_ERR_NVS_NOT_FOUND) {
+        return false;
+    }
+
+    return nvs_commit(handle) == ESP_OK;
+}

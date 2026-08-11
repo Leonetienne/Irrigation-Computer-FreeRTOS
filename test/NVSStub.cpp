@@ -105,4 +105,33 @@ TEST_CASE("NVSStub", "[NVSStub]") {
         const std::string maxLength(NVS_MAX_STRING_LENGTH, 'a');
         REQUIRE(stub.setString("ssid", maxLength.c_str()));
     }
+
+    SECTION("eraseKey fails before begin") {
+        REQUIRE_FALSE(stub.eraseKey("ssid"));
+    }
+
+    SECTION("eraseKey removes a previously stored string value") {
+        stub.begin("irrigation");
+        stub.setString("ssid", "my_example_ap");
+
+        REQUIRE(stub.eraseKey("ssid"));
+
+        char buffer[NVS_MAX_STRING_LENGTH + 1];
+        REQUIRE_FALSE(stub.getString("ssid", buffer));
+    }
+
+    SECTION("eraseKey removes a previously stored int value") {
+        stub.begin("irrigation");
+        stub.setInt("count", 42);
+
+        REQUIRE(stub.eraseKey("count"));
+
+        int32_t value = 0;
+        REQUIRE_FALSE(stub.getInt("count", value));
+    }
+
+    SECTION("eraseKey succeeds for a key that was never set") {
+        stub.begin("irrigation");
+        REQUIRE(stub.eraseKey("missing"));
+    }
 }

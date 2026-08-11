@@ -22,7 +22,7 @@ public:
     esp_err_t gpioResetPin(const gpio_num_t pinNum) noexcept override;
 
     /**
-     * Will set a pins direction (in/out) (in currently not supported)
+     * Will set a pins direction (in/out)
      */
     esp_err_t gpioSetDirection(const gpio_num_t pinNum, const gpio_mode_t pinMode) noexcept override;
 
@@ -31,12 +31,24 @@ public:
      */
     esp_err_t gpioSetLevel(const gpio_num_t pinNum, const uint32_t level) noexcept override;
 
+    /**
+     * Will read a pins input level, as set by test_setInputLevel()
+     */
+    uint32_t gpioGetLevel(const gpio_num_t pinNum) noexcept override;
+
     /* Unit test interrogoters */
     [[ nodiscard ]] gpio_mode_t test_gpioGetMode(const gpio_num_t pinNum) noexcept;
     [[ nodiscard ]] uint32_t test_gpioGetLevel(const gpio_num_t pinNum) noexcept;
 
+    /**
+     * Unit test helper: simulates an external signal driving a pin's input level,
+     * as read back by gpioGetLevel()
+     */
+    void test_setInputLevel(const gpio_num_t pinNum, const uint32_t level) noexcept;
+
 private:
     std::unordered_map<gpio_num_t, uint32_t> pinLevelMap;
+    std::unordered_map<gpio_num_t, uint32_t> inputLevelMap;
     std::unordered_map<gpio_num_t, gpio_mode_t> pinDirectionMap;
 };
 

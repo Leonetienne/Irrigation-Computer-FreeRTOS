@@ -51,6 +51,8 @@ void System::init() noexcept {
     wifiMan.setOnDisconnected([this]() { onWifiDisconnected(); });
     wifiMan.setOnFailed([this]() { onWifiFailed(); });
 
+    gpio.gpioSetDirection(WIFI_RESET_BUTTON_PIN, GPIO_MODE_INPUT);
+
     mqttSync.begin();
 
     const auto storedCredentials = settings.retrieveWifiCredentials();
@@ -147,15 +149,43 @@ void System::update() noexcept {
         wifiMan.updateOnboardingModeLedBlink();
     }
 
+    pollWifiResetButton();
+
     if (wifiConnectFailed) {
         wifiConnectFailed = false;
         ESP_LOGW(LOG_TAG, "wifi connect failed, falling back to onboarding ap");
-        httpServer.free();
-        mqttSync.disconnect();
-        wifiMan.free();
-        wifiMan.beginOnboardingWifi();
-        httpServer.begin();
-        stateMachine.setState(STATE::WIFI_ONBOARDING);
+        restartOnboarding();
+    }
+}
+
+void System::restartOnboarding() noexcept {
+    httpServer.free();
+    mqttSync.disconnect();
+    wifiMan.free();
+    wifiMan.beginOnboardingWifi();
+    httpServer.begin();
+    stateMachine.setState(STATE::WIFI_ONBOARDING);
+}
+
+void System::pollWifiResetButton() noexcept {
+    const bool pressed = gpio.gpioGetLevel(WIFI_RESET_BUTTON_PIN) == 0; // active low
+
+    if (!pressed) {
+        wifiResetButtonHeld = false;
+        return;
+    }
+
+    if (!wifiResetButtonHeld) {
+        wifiResetButtonHeld = true;
+        wifiResetButtonPressedSinceMillis = i_time.getMillis();
+        return;
+    }
+
+    if (i_time.getMillis() - wifiResetButtonPressedSinceMillis >= WIFI_RESET_HOLD_MILLIS) {
+        wifiResetButtonHeld = false; // rearm, so this doesn't keep re-firing while still held down
+        ESP_LOGW(LOG_TAG, "wifi reset button held, wiping stored wifi credentials");
+        settings.eraseWifiCredentials();
+        restartOnboarding();
     }
 }
 

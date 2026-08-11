@@ -63,6 +63,13 @@ public:
     [[nodiscard]] virtual bool getString(const char* key, char* outValue) const noexcept = 0;
 
     /**
+     * Erases the value stored under the given key, if any. A key that was never set is not a failure.
+     * @param key
+     * @return Success state
+     */
+    virtual bool eraseKey(const char* key) noexcept = 0;
+
+    /**
      * @return Whether the nvs system is ready and initialized
      */
     [[nodiscard]] bool isReady() const noexcept { return isInitialized; }

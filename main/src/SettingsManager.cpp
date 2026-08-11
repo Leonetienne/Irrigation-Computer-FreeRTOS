@@ -58,6 +58,12 @@ std::expected<WifiCredentials, bool> SettingsManager::retrieveWifiCredentials() 
     return WifiCredentials{storedSsid, storedPassword};
 }
 
+bool SettingsManager::eraseWifiCredentials() const noexcept {
+    return
+        i_nvs.eraseKey("wifi_ssid") &&
+        i_nvs.eraseKey("wifi_pass");
+}
+
 bool SettingsManager::storeTitle(const std::string &title) const noexcept {
     return i_nvs.setString("title", title.c_str());
 }

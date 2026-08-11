@@ -77,11 +77,29 @@ private:
      */
     void onWifiFailed() noexcept;
 
+    /**
+     * Tears down whatever wifi/http/mqtt state is active and (re-)starts onboarding mode.
+     * Shared by the wifi-failure fallback and the wifi-reset button.
+     */
+    void restartOnboarding() noexcept;
+
+    /**
+     * Polls the onboard wifi-reset button (see WIFI_RESET_BUTTON_PIN). Holding it down for
+     * WIFI_RESET_HOLD_MILLIS wipes the stored wifi credentials and falls back to onboarding mode.
+     */
+    void pollWifiResetButton() noexcept;
+
     // Valves are only ever meant to auto-close after minutes/hours, so polling every ~10ms
     // update() tick is wasted work. checking every ~2s (VALVE_POLL_INTERVAL_TICKS ticks) loses
     // no meaningful precision. The exact timing is not important.
     static constexpr int32_t VALVE_POLL_INTERVAL_TICKS = 200;
     int32_t valvePollTickCounter = 0;
+
+    // The onboard BOOT button
+    static constexpr gpio_num_t WIFI_RESET_BUTTON_PIN = GPIO_NUM_0;
+    static constexpr int64_t WIFI_RESET_HOLD_MILLIS = 5000;
+    bool wifiResetButtonHeld = false;
+    int64_t wifiResetButtonPressedSinceMillis = 0;
 
     bool isInitialized = false;
     bool wifiConnectFailed = false;

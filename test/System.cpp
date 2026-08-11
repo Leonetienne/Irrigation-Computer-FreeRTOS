@@ -387,6 +387,70 @@ TEST_CASE("System: update polls the mqtt activity led pulse", "[System]") {
     }
 }
 
+TEST_CASE("System: wifi reset button", "[System]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    timeStub.setStubbedMillis(0);
+    WifiManagerStub wifiMan(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    HttpServerStub httpServer{};
+    StateMachine stateMachine{};
+    SettingsManager settings(nvs);
+    ValveGroup valveGroup(timeStub, settings);
+    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    MqttSync mqttSync(mqttStub, valveGroup, settings);
+
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
+
+    REQUIRE(settings.storeWifiCredentials({"my-ssid", "my-password"}));
+    system.init(); // stored credentials -> WAIT_WIFI_CONNECTION, not onboarding
+
+    SECTION("holding it for the full threshold wipes credentials and falls back to onboarding") {
+        gpioStub.test_setInputLevel(GPIO_NUM_0, 0); // pressed (active low)
+        system.update();
+
+        timeStub.setStubbedMillis(5000);
+        system.update();
+
+        REQUIRE(stateMachine.getState() == STATE::WIFI_ONBOARDING);
+        REQUIRE_FALSE(settings.retrieveWifiCredentials().has_value());
+        REQUIRE(wifiMan.getBeginOnboardingWifiCallCount() == 1);
+        REQUIRE(httpServer.test_isRunning());
+    }
+
+    SECTION("releasing it before the threshold does not trigger a reset") {
+        gpioStub.test_setInputLevel(GPIO_NUM_0, 0); // pressed
+        system.update();
+
+        timeStub.setStubbedMillis(4999);
+        system.update();
+
+        gpioStub.test_setInputLevel(GPIO_NUM_0, 1); // released
+        system.update();
+
+        timeStub.setStubbedMillis(5000);
+        system.update();
+
+        REQUIRE(stateMachine.getState() == STATE::WAIT_WIFI_CONNECTION);
+        REQUIRE(settings.retrieveWifiCredentials().has_value());
+        REQUIRE(wifiMan.getBeginOnboardingWifiCallCount() == 0);
+    }
+
+    SECTION("a held button only triggers once, not on every subsequent tick") {
+        gpioStub.test_setInputLevel(GPIO_NUM_0, 0); // pressed
+        system.update();
+
+        timeStub.setStubbedMillis(5000);
+        system.update();
+        system.update();
+        system.update();
+
+        REQUIRE(wifiMan.getBeginOnboardingWifiCallCount() == 1);
+    }
+}
+
 TEST_CASE("SystemStub: getSystem wires a usable System", "[System][SystemStub]") {
     System& system = getSystem();
 

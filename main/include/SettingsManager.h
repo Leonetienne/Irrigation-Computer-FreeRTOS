@@ -26,6 +26,12 @@ public:
     [[nodiscard]] std::expected<WifiCredentials, bool> retrieveWifiCredentials() const noexcept;
 
     /**
+     * Erases any stored wifi credentials
+     * @return Success state
+     */
+    bool eraseWifiCredentials() const noexcept;
+
+    /**
      * @return Success state
      */
     bool storeTitle(const std::string& title) const noexcept;

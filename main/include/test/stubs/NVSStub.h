@@ -58,6 +58,13 @@ public:
      */
     bool getString(const char* key, char* outValue) const noexcept override;
 
+    /**
+     * Erases the value stored under the given key, if any. A key that was never set is not a failure.
+     * @param key
+     * @return Success state
+     */
+    bool eraseKey(const char* key) noexcept override;
+
     [[nodiscard]] const std::string& getLastNamespace() const;
     [[nodiscard]] int getBeginCallCount() const;
 

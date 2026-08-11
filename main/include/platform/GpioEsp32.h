@@ -32,6 +32,11 @@ public:
      * Calls gpio_set_level
      */
     esp_err_t gpioSetLevel(const gpio_num_t pinNum, const uint32_t level) noexcept override;
+
+    /**
+     * Calls gpio_get_level
+     */
+    uint32_t gpioGetLevel(const gpio_num_t pinNum) noexcept override;
 };
 
 

@@ -67,6 +67,16 @@ bool NVSStub::getString(const char* key, char* outValue) const noexcept {
     return true;
 }
 
+bool NVSStub::eraseKey(const char* key) noexcept {
+    if (!isInitialized) {
+        return false;
+    }
+
+    intValues.erase(key);
+    stringValues.erase(key);
+    return true;
+}
+
 const std::string& NVSStub::getLastNamespace() const {
     return lastNamespace;
 }

@@ -25,6 +25,18 @@ TEST_CASE("SettingsManager: wifi credentials", "[SettingsManager]") {
         SettingsManager uninitializedSettings(uninitializedNvs);
         REQUIRE_FALSE(uninitializedSettings.storeWifiCredentials(WifiCredentials{"MyHomeWifi", "hunter2"}));
     }
+
+    SECTION("erase removes previously stored credentials") {
+        REQUIRE(settings.storeWifiCredentials(WifiCredentials{"MyHomeWifi", "hunter2"}));
+
+        REQUIRE(settings.eraseWifiCredentials());
+
+        REQUIRE_FALSE(settings.retrieveWifiCredentials().has_value());
+    }
+
+    SECTION("erase succeeds even when nothing was stored") {
+        REQUIRE(settings.eraseWifiCredentials());
+    }
 }
 
 TEST_CASE("SettingsManager: title", "[SettingsManager]") {
