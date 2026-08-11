@@ -1,5 +1,22 @@
 #include "test/stubs/MqttStub.h"
 
+MqttStub::MqttStub(
+    gpio_num_t indicatorGpioPin,
+    IGpio& gpio,
+    GpioPinRegister& pinRegister,
+    const ITime& i_time
+) noexcept :
+    gpio(gpio),
+    pinRegister(pinRegister),
+    i_time(i_time),
+    indicatorPin(pinRegister, gpio, indicatorGpioPin)
+{
+    if (indicatorPin.getGpioNum() != GPIO_NUM_NC) {
+        indicatorPin.initialize();
+        indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+    }
+}
+
 bool MqttStub::begin(const MqttConnectOptions& options) noexcept {
     lastConnectOptions = options;
     ++beginCallCount;
@@ -15,6 +32,7 @@ bool MqttStub::free() noexcept {
 
 bool MqttStub::publish(const std::string& topic, const std::string& payload, int qos, bool retain) noexcept {
     publishedMessages.push_back({topic, payload, qos, retain});
+    triggerActivityPulse();
     return true;
 }
 
@@ -39,6 +57,28 @@ void MqttStub::setOnMessage(std::function<void(const std::string& topic, const s
     onMessage = std::move(callback);
 }
 
+void MqttStub::updateActivityLedPulse() noexcept {
+    if (!indicatorPin.isReady()) {
+        return;
+    }
+    if (indicatorPin.getState() != PIN_STATE_DIGITAL::HIGH) {
+        return;
+    }
+
+    if (i_time.getMillis() - lastActivityAtMs >= PULSE_DURATION_MS) {
+        indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+    }
+}
+
+void MqttStub::triggerActivityPulse() noexcept {
+    if (!indicatorPin.isReady()) {
+        return;
+    }
+
+    indicatorPin.setState(PIN_STATE_DIGITAL::HIGH);
+    lastActivityAtMs = i_time.getMillis();
+}
+
 void MqttStub::simulateConnected() {
     state = MqttConnectionState::Connected;
     if (onConnected) onConnected();
@@ -50,6 +90,7 @@ void MqttStub::simulateDisconnected() {
 }
 
 void MqttStub::simulateMessage(const std::string& topic, const std::string& payload) {
+    triggerActivityPulse();
     if (onMessage) onMessage(topic, payload);
 }
 

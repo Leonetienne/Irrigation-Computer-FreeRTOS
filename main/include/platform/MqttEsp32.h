@@ -2,11 +2,15 @@
 #define IRRIGATION_COMPUTER_TESTS_MQTTESP32_H
 
 #include "hal/IMqtt.h"
+#include "hal/IGpio.h"
+#include "hal/ITime.h"
+#include "GpioPinRegister.h"
+#include "platform/GpioDigitalWritePin.h"
 #include "mqtt_client.h"
 
 class MqttEsp32 : public IMqtt {
 public:
-    MqttEsp32() = default;
+    MqttEsp32(gpio_num_t indicatorGpioPin, IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
     MqttEsp32(const MqttEsp32&) = delete;
     MqttEsp32& operator=(const MqttEsp32&) = delete;
     MqttEsp32(MqttEsp32&&) = delete;
@@ -35,11 +39,21 @@ public:
     void setOnDisconnected(std::function<void()> callback) noexcept override;
     void setOnMessage(std::function<void(const std::string& topic, const std::string& payload)> callback) noexcept override;
 
+    void updateActivityLedPulse() noexcept override;
+
 private:
     /**
      * Static esp-idf event callback
      */
     static void eventHandler(void* arg, esp_event_base_t base, int32_t id, void* data) noexcept;
+
+    void triggerActivityPulse() noexcept;
+
+    static constexpr int64_t PULSE_DURATION_MS = 200;
+
+    IGpio& gpio;
+    GpioPinRegister& pinRegister;
+    const ITime& i_time;
 
     MqttConnectionState state = MqttConnectionState::Disconnected;
     esp_mqtt_client_handle_t client = nullptr;
@@ -54,6 +68,9 @@ private:
     std::function<void()> onConnected;
     std::function<void()> onDisconnected;
     std::function<void(const std::string&, const std::string&)> onMessage;
+
+    GpioDigitalWritePin indicatorPin;
+    int64_t lastActivityAtMs = 0;
 };
 
 #endif //IRRIGATION_COMPUTER_TESTS_MQTTESP32_H

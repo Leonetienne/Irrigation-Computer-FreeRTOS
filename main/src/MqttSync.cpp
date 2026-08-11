@@ -97,6 +97,10 @@ void MqttSync::pollPublishStateChanges() noexcept {
     }
 }
 
+void MqttSync::pollActivityLedPulse() noexcept {
+    mqtt.updateActivityLedPulse();
+}
+
 void MqttSync::onMqttConnected() noexcept {
     ESP_LOGI(LOG_TAG, "mqtt connected, publishing availability and per-valve discovery");
     mqtt.publish(MqttTopics::availabilityTopic(deviceName), "Online", 1, true);

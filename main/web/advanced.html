@@ -33,15 +33,15 @@
         <div id="valve-gpio-fields"></div>
 
         <h2 style="margin-top:1.4rem">Status LEDs</h2>
-        <p class="hint">GPIO pins are saved but not yet driven by any LED logic.</p>
+        <p class="hint">MQTT status LED gpio is saved but not yet driven by any LED logic.</p>
 
         <div class="check-row">
-            <input type="checkbox" id="disable_conn_leds" name="disable_conn_leds" value="1" disabled="">
-            <label for="disable_conn_leds" style="margin:0">Disable connectivity status LEDs (WiFi/MQTT)</label>
+            <input type="checkbox" id="enable_conn_leds" name="enable_conn_leds" value="1" checked>
+            <label for="enable_conn_leds" style="margin:0">Enable connectivity status LEDs (WiFi/MQTT)</label>
         </div>
         <div class="check-row">
-            <input type="checkbox" id="disable_valve_leds" name="disable_valve_leds" value="1" disabled="">
-            <label for="disable_valve_leds" style="margin:0">Disable valve status LEDs</label>
+            <input type="checkbox" id="enable_valve_leds" name="enable_valve_leds" value="1" checked>
+            <label for="enable_valve_leds" style="margin:0">Enable valve status LEDs</label>
         </div>
 
         <label for="wifi_led_gpio">WiFi OK LED - GPIO</label>
@@ -123,6 +123,10 @@ async function loadAdvanced() {
             addGpioField(valveFields, key, 'Valve ' + match[1] + ' - GPIO', value, Number(match[1]) >= numValves);
         } else if (key === 'wifi_led_gpio' || key === 'mqtt_led_gpio' || key.match(/^valve_led_gpio\d+$/)) {
             document.getElementById(key).value = value;
+        } else if (key === 'conn_leds_enabled') {
+            document.getElementById('enable_conn_leds').checked = value !== '0';
+        } else if (key === 'valve_leds_enabled') {
+            document.getElementById('enable_valve_leds').checked = value !== '0';
         }
     });
 }

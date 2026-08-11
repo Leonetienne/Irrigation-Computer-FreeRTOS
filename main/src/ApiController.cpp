@@ -276,6 +276,18 @@ std::string ApiController::buildAdvancedSettingsReport(const SettingsManager& se
     const auto mqttLedPin = settings.retrieveMqttLedGpioPin();
     appendGpioField(report, "mqtt_led_gpio", mqttLedPin.value_or(GPIO_NUM_NC));
 
+    report += "conn_leds_enabled=";
+    if (const auto connLedsEnabled = settings.retrieveConnLedsEnabled(); connLedsEnabled.has_value()) {
+        report += *connLedsEnabled ? '1' : '0';
+    }
+    report += '\n';
+
+    report += "valve_leds_enabled=";
+    if (const auto valveLedsEnabled = settings.retrieveValveLedsEnabled(); valveLedsEnabled.has_value()) {
+        report += *valveLedsEnabled ? '1' : '0';
+    }
+    report += '\n';
+
     return report;
 }
 
@@ -305,12 +317,16 @@ bool ApiController::applyAdvancedSettingsForm(
 
     const gpio_num_t wifiLedPin = parseGpioField(form, "wifi_led_gpio");
     const gpio_num_t mqttLedPin = parseGpioField(form, "mqtt_led_gpio");
+    const bool connLedsEnabled = form.contains("enable_conn_leds");
+    const bool valveLedsEnabled = form.contains("enable_valve_leds");
 
     if (!settings.storeNumValves(numValves) ||
         !settings.storeValveActuatorGpioPins(pins) ||
         !settings.storeValveIndicatorGpioPins(indicatorPins) ||
         !settings.storeWifiLedGpioPin(wifiLedPin) ||
-        !settings.storeMqttLedGpioPin(mqttLedPin)) {
+        !settings.storeMqttLedGpioPin(mqttLedPin) ||
+        !settings.storeConnLedsEnabled(connLedsEnabled) ||
+        !settings.storeValveLedsEnabled(valveLedsEnabled)) {
         return false;
     }
 

@@ -19,12 +19,12 @@ TEST_CASE("System: init", "[System]") {
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
+    WifiManagerStub wifiMan(GPIO_NUM_NC, gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
-    MqttStub mqttStub{};
+    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync mqttSync(mqttStub, valveGroup, settings);
 
     System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
@@ -38,21 +38,6 @@ TEST_CASE("System: init", "[System]") {
         REQUIRE(httpServer.test_getBeginCallCount() == 1);
         REQUIRE(httpServer.test_isRunning());
         REQUIRE(valveGroup.isReady());
-    }
-
-    SECTION("configures the wifi status led from settings") {
-        REQUIRE(settings.storeWifiLedGpioPin(GPIO_NUM_2));
-
-        system.init();
-
-        REQUIRE(pr.isPinBound(GPIO_NUM_2));
-        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
-    }
-
-    SECTION("leaves the wifi status led unconfigured when no pin was ever stored") {
-        system.init();
-
-        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_2));
     }
 
     SECTION("with stored wifi credentials waits for connection without starting the http server yet") {
@@ -98,6 +83,24 @@ TEST_CASE("System: init", "[System]") {
 
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_20) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
+
+    SECTION("leaves a leftover valve indicator pin unbound when valve leds are disabled") {
+        REQUIRE(settings.storeNumValves(2));
+        REQUIRE(settings.storeValveActuatorGpioPins({
+            GPIO_NUM_4, GPIO_NUM_5, GPIO_NUM_NC, GPIO_NUM_NC,
+            GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC
+        }));
+        REQUIRE(settings.storeValveIndicatorGpioPins({
+            GPIO_NUM_20, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC,
+            GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC
+        }));
+        REQUIRE(settings.storeValveLedsEnabled(false));
+
+        system.init();
+        REQUIRE(valveGroup.open(0));
+
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_20));
+    }
 }
 
 TEST_CASE("System: free", "[System]") {
@@ -106,12 +109,12 @@ TEST_CASE("System: free", "[System]") {
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
+    WifiManagerStub wifiMan(GPIO_NUM_NC, gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
-    MqttStub mqttStub{};
+    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync mqttSync(mqttStub, valveGroup, settings);
 
     System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
@@ -143,12 +146,12 @@ TEST_CASE("System: onWifiConnected", "[System]") {
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
+    WifiManagerStub wifiMan(GPIO_NUM_NC, gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
-    MqttStub mqttStub{};
+    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync mqttSync(mqttStub, valveGroup, settings);
 
     System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
@@ -170,12 +173,12 @@ TEST_CASE("System: onWifiDisconnected", "[System]") {
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
+    WifiManagerStub wifiMan(GPIO_NUM_NC, gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
-    MqttStub mqttStub{};
+    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync mqttSync(mqttStub, valveGroup, settings);
 
     System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
@@ -212,12 +215,12 @@ TEST_CASE("System: onWifiFailed defers the onboarding fallback to update()", "[S
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
+    WifiManagerStub wifiMan(GPIO_NUM_NC, gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
-    MqttStub mqttStub{};
+    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync mqttSync(mqttStub, valveGroup, settings);
 
     System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
@@ -254,12 +257,12 @@ TEST_CASE("System: update polls valve auto-close timeouts", "[System]") {
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
+    WifiManagerStub wifiMan(GPIO_NUM_NC, gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
-    MqttStub mqttStub{};
+    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync mqttSync(mqttStub, valveGroup, settings);
 
     System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
@@ -276,9 +279,24 @@ TEST_CASE("System: update polls valve auto-close timeouts", "[System]") {
     REQUIRE(valveGroup.open(0));
 
     timeStub.setStubbedTime(timeStub.getTime() + 61);
-    system.update();
 
-    REQUIRE(valveGroup.getValveOpenState(0) == false);
+    SECTION("closes the valve once the throttled poll interval is reached") {
+        // auto-close is only actually polled every 200 update() ticks (~2s at the ~10ms
+        // production loop cadence), not on every tick - see System::VALVE_POLL_INTERVAL_TICKS
+        for (int i = 0; i < 200; ++i) {
+            system.update();
+        }
+
+        REQUIRE(valveGroup.getValveOpenState(0) == false);
+    }
+
+    SECTION("does not close the valve before the throttled poll interval is reached") {
+        for (int i = 0; i < 199; ++i) {
+            system.update();
+        }
+
+        REQUIRE(valveGroup.getValveOpenState(0) == true);
+    }
 }
 
 TEST_CASE("System: update polls the onboarding-mode led blink only during onboarding", "[System]") {
@@ -287,20 +305,18 @@ TEST_CASE("System: update polls the onboarding-mode led blink only during onboar
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
-    WifiManagerStub wifiMan(gpioStub, pr, timeStub);
+    timeStub.setStubbedMillis(0);
+    WifiManagerStub wifiMan(GPIO_NUM_2, gpioStub, pr, timeStub);
     HttpServerStub httpServer{};
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
-    MqttStub mqttStub{};
+    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync mqttSync(mqttStub, valveGroup, settings);
 
     System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
 
     SECTION("blinks the led while in onboarding mode") {
-        REQUIRE(settings.storeWifiLedGpioPin(GPIO_NUM_2));
-        timeStub.setStubbedMillis(0);
-
         system.init(); // no stored credentials -> WIFI_ONBOARDING
         REQUIRE(stateMachine.getState() == STATE::WIFI_ONBOARDING);
 
@@ -314,9 +330,7 @@ TEST_CASE("System: update polls the onboarding-mode led blink only during onboar
     }
 
     SECTION("does not blink the led outside onboarding mode") {
-        REQUIRE(settings.storeWifiLedGpioPin(GPIO_NUM_2));
         REQUIRE(settings.storeWifiCredentials({"my-ssid", "my-password"}));
-        timeStub.setStubbedMillis(0);
 
         system.init(); // stored credentials -> WAIT_WIFI_CONNECTION, not onboarding
         REQUIRE(stateMachine.getState() == STATE::WAIT_WIFI_CONNECTION);
@@ -328,6 +342,48 @@ TEST_CASE("System: update polls the onboarding-mode led blink only during onboar
 
         // stays at its initial LOW - update() never polled the blink outside onboarding
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+}
+
+TEST_CASE("System: update polls the mqtt activity led pulse", "[System]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    timeStub.setStubbedMillis(0);
+    WifiManagerStub wifiMan(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    HttpServerStub httpServer{};
+    StateMachine stateMachine{};
+    SettingsManager settings(nvs);
+    ValveGroup valveGroup(timeStub, settings);
+    MqttStub mqttStub(GPIO_NUM_3, gpioStub, pr, timeStub);
+    MqttSync mqttSync(mqttStub, valveGroup, settings);
+
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
+
+    system.init();
+
+    SECTION("turns the led off 200ms after a publish, regardless of system state") {
+        mqttStub.publish("stat/valve/0", "ON", 1, true);
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        timeStub.setStubbedMillis(199);
+        system.update();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        timeStub.setStubbedMillis(200);
+        system.update();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("turns the led off 200ms after a received message") {
+        mqttStub.simulateMessage("cmnd/irrigation/x/0/POWER", "ON");
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        timeStub.setStubbedMillis(200);
+        system.update();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 }
 

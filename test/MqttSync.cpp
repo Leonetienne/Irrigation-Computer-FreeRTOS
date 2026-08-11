@@ -38,7 +38,7 @@ TEST_CASE("MqttSync: connect", "[MqttSync]") {
     SettingsManager settings(nvs);
     ValveGroup valveGroup(timeStub, settings);
     REQUIRE(valveGroup.initialize(makeValves(gpioStub, timeStub, pr)));
-    MqttStub mqtt{};
+    MqttStub mqtt(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync sync(mqtt, valveGroup, settings);
     sync.begin();
 
@@ -80,7 +80,7 @@ TEST_CASE("MqttSync: onMqttConnected", "[MqttSync]") {
     REQUIRE(settings.storeTitle("my_device"));
     REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker:1883", "", ""}));
 
-    MqttStub mqtt{};
+    MqttStub mqtt(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync sync(mqtt, valveGroup, settings);
     sync.begin();
     REQUIRE(sync.connect());
@@ -132,7 +132,7 @@ TEST_CASE("MqttSync: onMqttMessage applies valve commands", "[MqttSync]") {
     REQUIRE(settings.storeTitle("my_device"));
     REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker:1883", "", ""}));
 
-    MqttStub mqtt{};
+    MqttStub mqtt(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync sync(mqtt, valveGroup, settings);
     sync.begin();
     REQUIRE(sync.connect());
@@ -177,7 +177,7 @@ TEST_CASE("MqttSync: onMqttDisconnected", "[MqttSync]") {
     REQUIRE(settings.storeTitle("my_device"));
     REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker:1883", "", ""}));
 
-    MqttStub mqtt{};
+    MqttStub mqtt(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync sync(mqtt, valveGroup, settings);
     sync.begin();
     REQUIRE(sync.connect());
@@ -208,7 +208,7 @@ TEST_CASE("MqttSync: pollPublishStateChanges", "[MqttSync]") {
     REQUIRE(settings.storeTitle("my_device"));
     REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker:1883", "", ""}));
 
-    MqttStub mqtt{};
+    MqttStub mqtt(GPIO_NUM_NC, gpioStub, pr, timeStub);
     MqttSync sync(mqtt, valveGroup, settings);
     sync.begin();
 

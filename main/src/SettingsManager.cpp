@@ -160,6 +160,28 @@ std::expected<gpio_num_t, bool> SettingsManager::retrieveMqttLedGpioPin() const 
     return std::unexpected(false);
 }
 
+bool SettingsManager::storeConnLedsEnabled(bool enabled) const noexcept {
+    return i_nvs.setInt("conn_leds_en", enabled ? 1 : 0);
+}
+
+std::expected<bool, bool> SettingsManager::retrieveConnLedsEnabled() const noexcept {
+    if (int32_t buf{}; i_nvs.getInt("conn_leds_en", buf)) {
+        return buf != 0;
+    }
+    return std::unexpected(false);
+}
+
+bool SettingsManager::storeValveLedsEnabled(bool enabled) const noexcept {
+    return i_nvs.setInt("valve_leds_en", enabled ? 1 : 0);
+}
+
+std::expected<bool, bool> SettingsManager::retrieveValveLedsEnabled() const noexcept {
+    if (int32_t buf{}; i_nvs.getInt("valve_leds_en", buf)) {
+        return buf != 0;
+    }
+    return std::unexpected(false);
+}
+
 bool SettingsManager::storeRuntimeSafetyEnabled(bool enabled) const noexcept {
     return i_nvs.setInt("rt_safety_en", enabled ? 1 : 0);
 }

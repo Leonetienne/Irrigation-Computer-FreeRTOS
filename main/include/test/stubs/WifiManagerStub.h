@@ -6,12 +6,11 @@
 #include "hal/ITime.h"
 #include "GpioPinRegister.h"
 #include "platform/GpioDigitalWritePin.h"
-#include <optional>
 #include <string>
 
 class WifiManagerStub : public IWifiManager {
 public:
-    WifiManagerStub(IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
+    WifiManagerStub(gpio_num_t indicatorGpioPin, IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
     WifiManagerStub(const WifiManagerStub&) = delete;
     WifiManagerStub& operator=(const WifiManagerStub&) = delete;
     WifiManagerStub(WifiManagerStub&&) noexcept;
@@ -58,7 +57,6 @@ public:
      */
     void setOnFailed(std::function<void()> callback) noexcept override;
 
-    bool setIndicatorGpioPin(gpio_num_t pin) noexcept override;
     void updateOnboardingModeLedBlink() noexcept override;
 
     /**
@@ -98,7 +96,7 @@ private:
     int beginUserWifiCallCount = 0;
     int beginOnboardingWifiCallCount = 0;
 
-    std::optional<GpioDigitalWritePin> indicatorPin;
+    GpioDigitalWritePin indicatorPin;
     int64_t lastBlinkToggleAtMs = 0;
 };
 

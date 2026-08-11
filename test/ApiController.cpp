@@ -309,7 +309,7 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
             "num_valves=\ngpio0=\ngpio1=\ngpio2=\ngpio3=\ngpio4=\ngpio5=\ngpio6=\ngpio7=\n"
             "valve_led_gpio0=\nvalve_led_gpio1=\nvalve_led_gpio2=\nvalve_led_gpio3=\n"
             "valve_led_gpio4=\nvalve_led_gpio5=\nvalve_led_gpio6=\nvalve_led_gpio7=\n"
-            "wifi_led_gpio=\nmqtt_led_gpio=\n");
+            "wifi_led_gpio=\nmqtt_led_gpio=\nconn_leds_enabled=\nvalve_leds_enabled=\n");
     }
 
     SECTION("buildAdvancedSettingsReport reports stored values") {
@@ -324,13 +324,15 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
         }));
         REQUIRE(settings.storeWifiLedGpioPin(GPIO_NUM_2));
         REQUIRE(settings.storeMqttLedGpioPin(GPIO_NUM_3));
+        REQUIRE(settings.storeConnLedsEnabled(false));
+        REQUIRE(settings.storeValveLedsEnabled(true));
 
         const std::string report = ApiController::buildAdvancedSettingsReport(settings);
         REQUIRE(report ==
             "num_valves=4\ngpio0=13\ngpio1=14\ngpio2=15\ngpio3=16\ngpio4=\ngpio5=\ngpio6=\ngpio7=\n"
             "valve_led_gpio0=20\nvalve_led_gpio1=21\nvalve_led_gpio2=\nvalve_led_gpio3=\n"
             "valve_led_gpio4=\nvalve_led_gpio5=\nvalve_led_gpio6=\nvalve_led_gpio7=\n"
-            "wifi_led_gpio=2\nmqtt_led_gpio=3\n");
+            "wifi_led_gpio=2\nmqtt_led_gpio=3\nconn_leds_enabled=0\nvalve_leds_enabled=1\n");
     }
 
     SECTION("applyAdvancedSettingsForm stores the submitted values") {
@@ -344,6 +346,8 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
             {"valve_led_gpio1", "21"},
             {"wifi_led_gpio", "2"},
             {"mqtt_led_gpio", "3"},
+            {"enable_conn_leds", "1"},
+            {"enable_valve_leds", "1"},
         };
         REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
         REQUIRE(*settings.retrieveNumValves() == 4);
@@ -363,6 +367,15 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
 
         REQUIRE(*settings.retrieveWifiLedGpioPin() == GPIO_NUM_2);
         REQUIRE(*settings.retrieveMqttLedGpioPin() == GPIO_NUM_3);
+        REQUIRE(*settings.retrieveConnLedsEnabled());
+        REQUIRE(*settings.retrieveValveLedsEnabled());
+    }
+
+    SECTION("applyAdvancedSettingsForm disables the conn/valve leds master switches when their checkboxes are absent") {
+        const std::unordered_map<std::string, std::string> form = {{"num_valves", "0"}};
+        REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
+        REQUIRE_FALSE(*settings.retrieveConnLedsEnabled());
+        REQUIRE_FALSE(*settings.retrieveValveLedsEnabled());
     }
 
     SECTION("applyAdvancedSettingsForm unsets pins beyond the new valve count") {

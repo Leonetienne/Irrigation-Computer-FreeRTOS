@@ -8,11 +8,10 @@
 #include "platform/GpioDigitalWritePin.h"
 #include "esp_event.h"
 #include "esp_netif_types.h"
-#include <optional>
 
 class WifiManagerEsp32 : public IWifiManager {
 public:
-    WifiManagerEsp32(IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
+    WifiManagerEsp32(gpio_num_t indicatorGpioPin, IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
     WifiManagerEsp32(const WifiManagerEsp32&) = delete;
     WifiManagerEsp32& operator=(const WifiManagerEsp32&) = delete;
     WifiManagerEsp32(WifiManagerEsp32&&) = delete;
@@ -63,7 +62,6 @@ public:
      */
     void setOnFailed(std::function<void()> callback) noexcept override;
 
-    bool setIndicatorGpioPin(gpio_num_t pin) noexcept override;
     void updateOnboardingModeLedBlink() noexcept override;
 
 private:
@@ -90,7 +88,7 @@ private:
     std::function<void()> onFailed;
     esp_netif_t* netif = nullptr;
 
-    std::optional<GpioDigitalWritePin> indicatorPin;
+    GpioDigitalWritePin indicatorPin;
     int64_t lastBlinkToggleAtMs = 0;
 };
 

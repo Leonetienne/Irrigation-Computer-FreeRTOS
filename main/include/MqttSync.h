@@ -43,6 +43,12 @@ public:
      */
     void pollPublishStateChanges() noexcept;
 
+    /**
+     * Turns the activity LED back off once its pulse duration has elapsed.
+     * Call repeatedly from the runtime loop.
+     */
+    void pollActivityLedPulse() noexcept;
+
 private:
     void onMqttConnected() noexcept;
     void onMqttDisconnected() noexcept;

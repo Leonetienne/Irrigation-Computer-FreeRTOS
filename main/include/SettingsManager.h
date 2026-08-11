@@ -81,6 +81,19 @@ public:
     [[nodiscard]] std::expected<gpio_num_t, bool> retrieveMqttLedGpioPin() const noexcept;
 
     /**
+     * Master switch for the wifi/mqtt connectivity status LEDs
+     */
+    bool storeConnLedsEnabled(bool enabled) const noexcept;
+    [[nodiscard]] std::expected<bool, bool> retrieveConnLedsEnabled() const noexcept;
+
+    /**
+     * Master switch for the per-valve status LEDs
+     * @return Success state
+     */
+    bool storeValveLedsEnabled(bool enabled) const noexcept;
+    [[nodiscard]] std::expected<bool, bool> retrieveValveLedsEnabled() const noexcept;
+
+    /**
      * @return Success state
      */
     bool storeRuntimeSafetyEnabled(bool enabled) const noexcept;

@@ -201,6 +201,30 @@ TEST_CASE("SettingsManager: connectivity status led gpio pins", "[SettingsManage
         REQUIRE(*settings.retrieveWifiLedGpioPin() == GPIO_NUM_NC);
         REQUIRE(*settings.retrieveMqttLedGpioPin() == GPIO_NUM_NC);
     }
+
+    SECTION("round trip stores and retrieves the conn leds master switch") {
+        REQUIRE(settings.storeConnLedsEnabled(false));
+
+        const auto result = settings.retrieveConnLedsEnabled();
+        REQUIRE(result.has_value());
+        REQUIRE_FALSE(*result);
+    }
+
+    SECTION("retrieve fails when the conn leds master switch was never stored") {
+        REQUIRE_FALSE(settings.retrieveConnLedsEnabled().has_value());
+    }
+
+    SECTION("round trip stores and retrieves the valve leds master switch") {
+        REQUIRE(settings.storeValveLedsEnabled(false));
+
+        const auto result = settings.retrieveValveLedsEnabled();
+        REQUIRE(result.has_value());
+        REQUIRE_FALSE(*result);
+    }
+
+    SECTION("retrieve fails when the valve leds master switch was never stored") {
+        REQUIRE_FALSE(settings.retrieveValveLedsEnabled().has_value());
+    }
 }
 
 TEST_CASE("SettingsManager: safety flags", "[SettingsManager]") {

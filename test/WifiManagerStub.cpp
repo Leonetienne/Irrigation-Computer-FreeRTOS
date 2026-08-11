@@ -8,7 +8,7 @@ TEST_CASE("WifiManagerStub", "[WifiManagerStub]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     TimeStub timeStub{};
-    WifiManagerStub stub(gpioStub, pr, timeStub);
+    WifiManagerStub stub(GPIO_NUM_NC, gpioStub, pr, timeStub);
 
     SECTION("default state is Disconnected") {
         REQUIRE(stub.getState() == WifiConnectionState::Disconnected);
@@ -89,59 +89,55 @@ TEST_CASE("WifiManagerStub: status indicator LED", "[WifiManagerStub]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     TimeStub timeStub{};
-    WifiManagerStub stub(gpioStub, pr, timeStub);
 
-    SECTION("setIndicatorGpioPin succeeds and defaults to LOW") {
-        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+    SECTION("a configured pin is bound and defaults to LOW") {
+        WifiManagerStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
+        REQUIRE(pr.isPinBound(GPIO_NUM_2));
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
-    SECTION("setIndicatorGpioPin with GPIO_NUM_NC succeeds without binding a pin") {
-        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_NC));
+    SECTION("GPIO_NUM_NC leaves no pin bound") {
+        WifiManagerStub stub(GPIO_NUM_NC, gpioStub, pr, timeStub);
         REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_2));
     }
 
-    SECTION("setIndicatorGpioPin fails when called twice") {
-        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
-        REQUIRE_FALSE(stub.setIndicatorGpioPin(GPIO_NUM_3));
-    }
-
     SECTION("goes HIGH on simulateConnected") {
-        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        WifiManagerStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
         stub.simulateConnected();
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
     SECTION("goes LOW on simulateDisconnected after having been connected") {
-        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        WifiManagerStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
         stub.simulateConnected();
         stub.simulateDisconnected();
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("goes LOW on simulateFailed after having been connected") {
-        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        WifiManagerStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
         stub.simulateConnected();
         stub.simulateFailed();
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("goes LOW on free after having been connected") {
-        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
+        WifiManagerStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
         stub.simulateConnected();
         stub.free();
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("updateOnboardingModeLedBlink does nothing without a configured pin") {
+        WifiManagerStub stub(GPIO_NUM_NC, gpioStub, pr, timeStub);
         timeStub.setStubbedMillis(10000);
         stub.updateOnboardingModeLedBlink();
         SUCCEED("no crash, nothing to assert without a pin");
     }
 
     SECTION("updateOnboardingModeLedBlink does not toggle before 500ms elapse") {
-        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
         timeStub.setStubbedMillis(0);
+        WifiManagerStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
 
         timeStub.setStubbedMillis(400);
         stub.updateOnboardingModeLedBlink();
@@ -150,8 +146,8 @@ TEST_CASE("WifiManagerStub: status indicator LED", "[WifiManagerStub]") {
     }
 
     SECTION("updateOnboardingModeLedBlink toggles once 500ms have elapsed") {
-        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
         timeStub.setStubbedMillis(0);
+        WifiManagerStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
 
         timeStub.setStubbedMillis(500);
         stub.updateOnboardingModeLedBlink();
@@ -167,8 +163,8 @@ TEST_CASE("WifiManagerStub: status indicator LED", "[WifiManagerStub]") {
     }
 
     SECTION("updateOnboardingModeLedBlink does not toggle twice within the same 500ms window") {
-        REQUIRE(stub.setIndicatorGpioPin(GPIO_NUM_2));
         timeStub.setStubbedMillis(0);
+        WifiManagerStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
 
         timeStub.setStubbedMillis(500);
         stub.updateOnboardingModeLedBlink();

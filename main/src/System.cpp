@@ -43,17 +43,15 @@ System::~System() noexcept {
 }
 
 void System::init() noexcept {
-    // wifiMan needs nvs initialized (the wifi driver stores its own state there)
-    if (!nvs.begin("system")) {
-        ESP_LOGE(LOG_TAG, "nvs.begin failed");
-    }
+    // nvs is expected to already be begun by the caller at this point: wifiMan/mqttSync's
+    // indicator LED pins are resolved from settings at construction time (see getSystem()),
+    // which requires nvs to be readable before this System is even built.
 
     wifiMan.setOnConnected([this]() { onWifiConnected(); });
     wifiMan.setOnDisconnected([this]() { onWifiDisconnected(); });
     wifiMan.setOnFailed([this]() { onWifiFailed(); });
 
     mqttSync.begin();
-    wifiMan.setIndicatorGpioPin(settings.retrieveWifiLedGpioPin().value_or(GPIO_NUM_NC));
 
     const auto storedCredentials = settings.retrieveWifiCredentials();
 
@@ -71,6 +69,7 @@ void System::init() noexcept {
     const int32_t numValves = settings.retrieveNumValves().value_or(0);
     const auto configuredPins = settings.retrieveValveActuatorGpioPins();
     const auto configuredIndicatorPins = settings.retrieveValveIndicatorGpioPins();
+    const bool valveLedsEnabled = settings.retrieveValveLedsEnabled().value_or(true);
 
     std::array<gpio_num_t, 8> valvePins{};
     std::array<gpio_num_t, 8> valveIndicatorPins{};
@@ -78,7 +77,7 @@ void System::init() noexcept {
         valvePins[i] = configuredPins.has_value() && static_cast<int32_t>(i) < numValves
             ? (*configuredPins)[i]
             : GPIO_NUM_NC;
-        valveIndicatorPins[i] = configuredIndicatorPins.has_value() && static_cast<int32_t>(i) < numValves
+        valveIndicatorPins[i] = valveLedsEnabled && configuredIndicatorPins.has_value() && static_cast<int32_t>(i) < numValves
             ? (*configuredIndicatorPins)[i]
             : GPIO_NUM_NC;
     }
@@ -136,8 +135,13 @@ void System::beforeShutdown() noexcept {
 }
 
 void System::update() noexcept {
-    valveGroup.autoCloseValvesAfterTimeoutPoll();
     mqttSync.pollPublishStateChanges();
+    mqttSync.pollActivityLedPulse();
+
+    if (++valvePollTickCounter >= VALVE_POLL_INTERVAL_TICKS) {
+        valvePollTickCounter = 0;
+        valveGroup.autoCloseValvesAfterTimeoutPoll();
+    }
 
     if (stateMachine.getState() == STATE::WIFI_ONBOARDING) {
         wifiMan.updateOnboardingModeLedBlink();

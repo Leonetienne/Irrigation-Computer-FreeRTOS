@@ -1,8 +1,14 @@
 #include <catch2/catch_test_macros.hpp>
 #include "test/stubs/MqttStub.h"
+#include "test/stubs/GpioStub.h"
+#include "test/stubs/TimeStub.h"
+#include "GpioPinRegister.h"
 
 TEST_CASE("MqttStub", "[MqttStub]") {
-    MqttStub stub;
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+    MqttStub stub(GPIO_NUM_NC, gpioStub, pr, timeStub);
 
     SECTION("default state is Disconnected") {
         REQUIRE(stub.getState() == MqttConnectionState::Disconnected);
@@ -80,5 +86,84 @@ TEST_CASE("MqttStub", "[MqttStub]") {
         stub.simulateConnected();
         stub.free();
         REQUIRE(stub.getState() == MqttConnectionState::Disconnected);
+    }
+}
+
+TEST_CASE("MqttStub: activity indicator LED", "[MqttStub]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+
+    SECTION("a configured pin is bound and defaults to LOW") {
+        MqttStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
+        REQUIRE(pr.isPinBound(GPIO_NUM_2));
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("GPIO_NUM_NC leaves no pin bound") {
+        MqttStub stub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_2));
+    }
+
+    SECTION("publish pulses the led HIGH immediately") {
+        MqttStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
+        stub.publish("stat/valve/0", "ON", 1, true);
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("simulateMessage pulses the led HIGH immediately") {
+        MqttStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
+        stub.simulateMessage("cmnd/valve/0", "ON");
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("updateActivityLedPulse leaves the led on before 200ms elapse") {
+        timeStub.setStubbedMillis(0);
+        MqttStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
+        stub.publish("stat/valve/0", "ON", 1, true);
+
+        timeStub.setStubbedMillis(199);
+        stub.updateActivityLedPulse();
+
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("updateActivityLedPulse turns the led off once 200ms have elapsed") {
+        timeStub.setStubbedMillis(0);
+        MqttStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
+        stub.publish("stat/valve/0", "ON", 1, true);
+
+        timeStub.setStubbedMillis(200);
+        stub.updateActivityLedPulse();
+
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("a new message re-triggers the pulse after it already turned off") {
+        timeStub.setStubbedMillis(0);
+        MqttStub stub(GPIO_NUM_2, gpioStub, pr, timeStub);
+        stub.publish("stat/valve/0", "ON", 1, true);
+
+        timeStub.setStubbedMillis(200);
+        stub.updateActivityLedPulse();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+        stub.simulateMessage("cmnd/valve/0", "ON");
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        timeStub.setStubbedMillis(399);
+        stub.updateActivityLedPulse();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        timeStub.setStubbedMillis(400);
+        stub.updateActivityLedPulse();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_2) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("updateActivityLedPulse does nothing without a configured pin") {
+        MqttStub stub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+        timeStub.setStubbedMillis(10000);
+        stub.updateActivityLedPulse();
+        SUCCEED("no crash, nothing to assert without a pin");
     }
 }

@@ -5,6 +5,7 @@
 #include <string>
 #include "enum/MqttConnectionState.h"
 #include "MqttConnectOptions.h"
+#include "compat/gpio_num_t.h"
 
 /**
  * Abstract interface to a single mqtt broker connection
@@ -66,6 +67,13 @@ public:
      * @param callback
      */
     virtual void setOnMessage(std::function<void(const std::string& topic, const std::string& payload)> callback) noexcept = 0;
+
+    /**
+     * Turns the activity LED back off once its pulse duration of 200ms has
+     * elapsed since the last publish() call or received message.
+     * Call repeatedly (e.g. every runtime loop tick).
+     */
+    virtual void updateActivityLedPulse() noexcept = 0;
 
     /**
      * @return Whether begin() has been called successfully without a matching free() yet

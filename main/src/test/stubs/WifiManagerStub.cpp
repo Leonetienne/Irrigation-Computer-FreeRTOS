@@ -1,10 +1,22 @@
 #include "test/stubs/WifiManagerStub.h"
 
-WifiManagerStub::WifiManagerStub(IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept :
+WifiManagerStub::WifiManagerStub(
+    gpio_num_t indicatorGpioPin,
+    IGpio& gpio,
+    GpioPinRegister& pinRegister,
+    const ITime& i_time
+) noexcept :
     gpio(gpio),
     pinRegister(pinRegister),
-    i_time(i_time)
-{ }
+    i_time(i_time),
+    indicatorPin(pinRegister, gpio, indicatorGpioPin)
+{
+    if (indicatorPin.getGpioNum() != GPIO_NUM_NC) {
+        indicatorPin.initialize();
+        indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+        lastBlinkToggleAtMs = i_time.getMillis();
+    }
+}
 
 WifiManagerStub::WifiManagerStub(WifiManagerStub&& other) noexcept :
     gpio(other.gpio),
@@ -59,27 +71,8 @@ void WifiManagerStub::setOnFailed(std::function<void()> callback) noexcept {
     onFailed = std::move(callback);
 }
 
-bool WifiManagerStub::setIndicatorGpioPin(gpio_num_t pin) noexcept {
-    if (indicatorPin.has_value()) {
-        return false;
-    }
-    if (pin == GPIO_NUM_NC) {
-        return true;
-    }
-
-    indicatorPin.emplace(pinRegister, gpio, pin);
-    if (!indicatorPin->initialize()) {
-        indicatorPin.reset();
-        return false;
-    }
-
-    indicatorPin->setState(PIN_STATE_DIGITAL::LOW);
-    lastBlinkToggleAtMs = i_time.getMillis();
-    return true;
-}
-
 void WifiManagerStub::updateOnboardingModeLedBlink() noexcept {
-    if (!indicatorPin.has_value() || !indicatorPin->isReady()) {
+    if (!indicatorPin.isReady()) {
         return;
     }
 
@@ -90,13 +83,13 @@ void WifiManagerStub::updateOnboardingModeLedBlink() noexcept {
 
     lastBlinkToggleAtMs = now;
     setIndicatorState(
-        indicatorPin->getState() == PIN_STATE_DIGITAL::HIGH ? PIN_STATE_DIGITAL::LOW : PIN_STATE_DIGITAL::HIGH
+        indicatorPin.getState() == PIN_STATE_DIGITAL::HIGH ? PIN_STATE_DIGITAL::LOW : PIN_STATE_DIGITAL::HIGH
     );
 }
 
 void WifiManagerStub::setIndicatorState(PIN_STATE_DIGITAL pinState) noexcept {
-    if (indicatorPin.has_value()) {
-        indicatorPin->setState(pinState);
+    if (indicatorPin.isReady()) {
+        indicatorPin.setState(pinState);
     }
 }
 

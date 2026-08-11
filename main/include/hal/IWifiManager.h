@@ -62,14 +62,6 @@ public:
     virtual void setOnFailed(std::function<void()> callback) noexcept = 0;
 
     /**
-     * Configures the wifi status indicator LED pin. Pass GPIO_NUM_NC to leave
-     * it unconfigured (all LED behavior becomes a no-op). Call once, before
-     * beginUserWifi()/beginOnboardingWifi().
-     * @return Success state
-     */
-    virtual bool setIndicatorGpioPin(gpio_num_t pin) noexcept = 0;
-
-    /**
      * Advances the onboarding-mode LED blink (toggles every 500ms). The caller
      * is responsible for only polling this while the system is actually in
      * onboarding mode; a no-op if no indicator pin is configured.

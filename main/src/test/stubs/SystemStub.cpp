@@ -15,11 +15,18 @@ System& getSystem() noexcept {
     static GpioStub gpio;
     static TimeStub time;
     static NVSStub nvs;
+    nvs.begin("system");
     static GpioPinRegister gpioPinRegister;
-    static WifiManagerStub wifiMan(gpio, gpioPinRegister, time);
-    static MqttStub mqtt;
-    static StateMachine stateMachine;
     static SettingsManager settings(nvs);
+
+    // resolved here since wifiMan/mqtt take their indicator pin as a ctor param
+    const bool connLedsEnabled = settings.retrieveConnLedsEnabled().value_or(true);
+    const gpio_num_t wifiLedPin = connLedsEnabled ? settings.retrieveWifiLedGpioPin().value_or(GPIO_NUM_NC) : GPIO_NUM_NC;
+    const gpio_num_t mqttLedPin = connLedsEnabled ? settings.retrieveMqttLedGpioPin().value_or(GPIO_NUM_NC) : GPIO_NUM_NC;
+
+    static WifiManagerStub wifiMan(wifiLedPin, gpio, gpioPinRegister, time);
+    static MqttStub mqtt(mqttLedPin, gpio, gpioPinRegister, time);
+    static StateMachine stateMachine;
     static ValveGroup valveGroup(time, settings);
     static HttpServerStub httpServer;
     static MqttSync mqttSync(mqtt, valveGroup, settings);

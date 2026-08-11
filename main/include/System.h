@@ -77,6 +77,12 @@ private:
      */
     void onWifiFailed() noexcept;
 
+    // Valves are only ever meant to auto-close after minutes/hours, so polling every ~10ms
+    // update() tick is wasted work. checking every ~2s (VALVE_POLL_INTERVAL_TICKS ticks) loses
+    // no meaningful precision. The exact timing is not important.
+    static constexpr int32_t VALVE_POLL_INTERVAL_TICKS = 200;
+    int32_t valvePollTickCounter = 0;
+
     bool isInitialized = false;
     bool wifiConnectFailed = false;
     StateMachine& stateMachine;
