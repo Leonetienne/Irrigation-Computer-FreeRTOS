@@ -12,8 +12,12 @@ MqttStub::MqttStub(
     indicatorPin(pinRegister, gpio, indicatorGpioPin)
 {
     if (indicatorPin.getGpioNum() != GPIO_NUM_NC) {
-        indicatorPin.initialize();
-        indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+        if (indicatorPin.initialize()) {
+            indicatorPin.setState(PIN_STATE_DIGITAL::HIGH);
+        }
+        else {
+            indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+        }
     }
 }
 
@@ -27,6 +31,8 @@ bool MqttStub::begin(const MqttConnectOptions& options) noexcept {
 bool MqttStub::free() noexcept {
     state = MqttConnectionState::Disconnected;
     isInitialized = false;
+    indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+    pulseActive = false;
     return true;
 }
 
@@ -61,12 +67,13 @@ void MqttStub::updateActivityLedPulse() noexcept {
     if (!indicatorPin.isReady()) {
         return;
     }
-    if (indicatorPin.getState() != PIN_STATE_DIGITAL::HIGH) {
+    if (!pulseActive) {
         return;
     }
 
     if (i_time.getMillis() - lastActivityAtMs >= PULSE_DURATION_MS) {
-        indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+        indicatorPin.setState(PIN_STATE_DIGITAL::HIGH);
+        pulseActive = false;
     }
 }
 
@@ -75,17 +82,22 @@ void MqttStub::triggerActivityPulse() noexcept {
         return;
     }
 
-    indicatorPin.setState(PIN_STATE_DIGITAL::HIGH);
+    indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
     lastActivityAtMs = i_time.getMillis();
+    pulseActive = true;
 }
 
 void MqttStub::simulateConnected() {
     state = MqttConnectionState::Connected;
+    indicatorPin.setState(PIN_STATE_DIGITAL::HIGH);
+    pulseActive = false;
     if (onConnected) onConnected();
 }
 
 void MqttStub::simulateDisconnected() {
     state = MqttConnectionState::Disconnected;
+    indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+    pulseActive = false;
     if (onDisconnected) onDisconnected();
 }
 

@@ -49,7 +49,7 @@ private:
 
     void triggerActivityPulse() noexcept;
 
-    static constexpr int64_t PULSE_DURATION_MS = 200;
+    static constexpr int64_t PULSE_DURATION_MS = 100;
 
     IGpio& gpio;
     GpioPinRegister& pinRegister;
@@ -71,6 +71,7 @@ private:
 
     GpioDigitalWritePin indicatorPin;
     int64_t lastActivityAtMs = 0;
+    bool pulseActive = false;
 };
 
 #endif //IRRIGATION_COMPUTER_TESTS_MQTTESP32_H

@@ -16,8 +16,12 @@ MqttEsp32::MqttEsp32(
     indicatorPin(pinRegister, gpio, indicatorGpioPin)
 {
     if (indicatorPin.getGpioNum() != GPIO_NUM_NC) {
-        indicatorPin.initialize();
-        indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+        if (indicatorPin.initialize()) {
+            indicatorPin.setState(PIN_STATE_DIGITAL::HIGH);
+        }
+        else {
+            indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+        }
     }
 }
 
@@ -89,6 +93,8 @@ bool MqttEsp32::free() noexcept {
     client = nullptr;
     isInitialized = false;
     state = MqttConnectionState::Disconnected;
+    indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+    pulseActive = false;
     return success;
 }
 
@@ -134,15 +140,13 @@ void MqttEsp32::setOnMessage(std::function<void(const std::string& topic, const 
 }
 
 void MqttEsp32::updateActivityLedPulse() noexcept {
-    if (!indicatorPin.isReady()) {
-        return;
-    }
-    if (indicatorPin.getState() != PIN_STATE_DIGITAL::HIGH) {
+    if (!indicatorPin.isReady() || !pulseActive) {
         return;
     }
 
     if (i_time.getMillis() - lastActivityAtMs >= PULSE_DURATION_MS) {
-        indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+        indicatorPin.setState(PIN_STATE_DIGITAL::HIGH);
+        pulseActive = false;
     }
 }
 
@@ -151,8 +155,9 @@ void MqttEsp32::triggerActivityPulse() noexcept {
         return;
     }
 
-    indicatorPin.setState(PIN_STATE_DIGITAL::HIGH);
+    indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
     lastActivityAtMs = i_time.getMillis();
+    pulseActive = true;
 }
 
 void MqttEsp32::eventHandler(void* arg, esp_event_base_t /*base*/, int32_t id, void* data) noexcept {
@@ -163,6 +168,8 @@ void MqttEsp32::eventHandler(void* arg, esp_event_base_t /*base*/, int32_t id, v
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(LOG_TAG, "connected");
             self->state = MqttConnectionState::Connected;
+            self->indicatorPin.setState(PIN_STATE_DIGITAL::HIGH);
+            self->pulseActive = false;
             if (self->onConnected) {
                 self->onConnected();
             }
@@ -171,6 +178,8 @@ void MqttEsp32::eventHandler(void* arg, esp_event_base_t /*base*/, int32_t id, v
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGW(LOG_TAG, "disconnected");
             self->state = MqttConnectionState::Disconnected;
+            self->indicatorPin.setState(PIN_STATE_DIGITAL::LOW);
+            self->pulseActive = false;
             if (self->onDisconnected) {
                 self->onDisconnected();
             }

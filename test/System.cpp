@@ -364,26 +364,26 @@ TEST_CASE("System: update polls the mqtt activity led pulse", "[System]") {
 
     system.init();
 
-    SECTION("turns the led off 200ms after a publish, regardless of system state") {
+    SECTION("turns the led back on 100ms after a publish, regardless of system state") {
         mqttStub.publish("stat/valve/0", "ON", 1, true);
-        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
 
-        timeStub.setStubbedMillis(199);
-        system.update();
-        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
-
-        timeStub.setStubbedMillis(200);
+        timeStub.setStubbedMillis(99);
         system.update();
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+        timeStub.setStubbedMillis(100);
+        system.update();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
-    SECTION("turns the led off 200ms after a received message") {
+    SECTION("turns the led back on 100ms after a received message") {
         mqttStub.simulateMessage("cmnd/irrigation/x/0/POWER", "ON");
-        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
-
-        timeStub.setStubbedMillis(200);
-        system.update();
         REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+        timeStub.setStubbedMillis(100);
+        system.update();
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 }
 
