@@ -100,7 +100,9 @@ bool WifiManagerEsp32::beginUserWifi(const WifiCredentials& credentials) noexcep
     }
 
     // disable wifi sleep, which caused the modem to go offline hours in
-    esp_wifi_set_ps(WIFI_PS_NONE);
+    if (esp_wifi_set_ps(WIFI_PS_NONE) != ESP_OK) {
+        return false;
+    }
 
     isInitialized = true;
     return true;
