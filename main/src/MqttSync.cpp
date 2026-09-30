@@ -24,7 +24,8 @@ bool MqttSync::connect() noexcept {
     }
 
     const auto brokerConfig = settings.retrieveMqttBrokerConfig();
-    if (!brokerConfig.has_value() || brokerConfig->uri.empty()) {
+    brokerConfigured = brokerConfig.has_value() && !brokerConfig->uri.empty();
+    if (!brokerConfigured) {
         ESP_LOGI(LOG_TAG, "no broker uri configured, skipping mqtt connect");
         return false;
     }
@@ -99,6 +100,13 @@ void MqttSync::pollPublishStateChanges() noexcept {
 
 void MqttSync::pollActivityLedPulse() noexcept {
     mqtt.updateActivityLedPulse();
+}
+
+bool MqttSync::isHealthy() const noexcept {
+    if (!brokerConfigured) {
+        return true;
+    }
+    return isStarted && mqtt.getState() == MqttConnectionState::Connected;
 }
 
 void MqttSync::onMqttConnected() noexcept {

@@ -49,6 +49,12 @@ public:
      */
     void pollActivityLedPulse() noexcept;
 
+    /**
+     * @return Whether the broker link is up. Always true if no broker is configured.
+     * Valid after connect() was called.
+     */
+    [[nodiscard]] bool isHealthy() const noexcept;
+
 private:
     void onMqttConnected() noexcept;
     void onMqttDisconnected() noexcept;
@@ -59,6 +65,7 @@ private:
     const SettingsManager& settings;
 
     bool isStarted = false;
+    bool brokerConfigured = false;
     std::string deviceName;
     std::string nodeId;
     std::array<std::optional<bool>, 8> lastPublishedState{};

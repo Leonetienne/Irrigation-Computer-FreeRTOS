@@ -457,3 +457,98 @@ TEST_CASE("SystemStub: getSystem wires a usable System", "[System][SystemStub]")
     system.init();
     REQUIRE(system.free());
 }
+
+TEST_CASE("System: connectivity watchdog", "[System]") {
+    constexpr int64_t TIMEOUT_MILLIS = 30 * 60 * 1000;
+
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    WifiManagerStub wifiMan(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    HttpServerStub httpServer{};
+    StateMachine stateMachine{};
+    SettingsManager settings(nvs);
+    ValveGroup valveGroup(timeStub, settings);
+    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    MqttSync mqttSync(mqttStub, valveGroup, settings);
+
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, wifiMan, valveGroup, httpServer, mqttSync);
+
+    SECTION("reboots if wifi never connects after boot") {
+        REQUIRE(settings.storeWifiCredentials({"my-ssid", "my-password"}));
+        system.init();
+
+        timeStub.setStubbedMillis(TIMEOUT_MILLIS - 1);
+        system.update();
+        REQUIRE(stateMachine.getState() == STATE::WAIT_WIFI_CONNECTION);
+
+        timeStub.setStubbedMillis(TIMEOUT_MILLIS);
+        system.update();
+        REQUIRE(stateMachine.getState() == STATE::SHUTTING_DOWN);
+    }
+
+    SECTION("reboots if stuck in the onboarding fallback despite stored credentials") {
+        REQUIRE(settings.storeWifiCredentials({"my-ssid", "my-password"}));
+        system.init();
+        wifiMan.simulateFailed();
+        system.update();
+        REQUIRE(stateMachine.getState() == STATE::WIFI_ONBOARDING);
+
+        timeStub.setStubbedMillis(TIMEOUT_MILLIS);
+        system.update();
+        REQUIRE(stateMachine.getState() == STATE::SHUTTING_DOWN);
+    }
+
+    SECTION("does not reboot while connected without a configured broker") {
+        REQUIRE(settings.storeWifiCredentials({"my-ssid", "my-password"}));
+        system.init();
+        wifiMan.simulateConnected();
+
+        timeStub.setStubbedMillis(TIMEOUT_MILLIS * 3);
+        system.update();
+        REQUIRE(stateMachine.getState() == STATE::OPERATIONAL);
+    }
+
+    SECTION("reboots if the broker stays unreachable while wifi is up") {
+        REQUIRE(settings.storeWifiCredentials({"my-ssid", "my-password"}));
+        REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker:1883", "", ""}));
+        system.init();
+        wifiMan.simulateConnected();
+        mqttStub.simulateConnected();
+
+        timeStub.setStubbedMillis(1000);
+        system.update(); // fully online, timer resets
+        mqttStub.simulateDisconnected();
+
+        timeStub.setStubbedMillis(1000 + TIMEOUT_MILLIS - 1);
+        system.update();
+        REQUIRE(stateMachine.getState() == STATE::OPERATIONAL);
+
+        timeStub.setStubbedMillis(1000 + TIMEOUT_MILLIS);
+        system.update();
+        REQUIRE(stateMachine.getState() == STATE::SHUTTING_DOWN);
+    }
+
+    SECTION("reboots if a dropped wifi connection does not come back") {
+        REQUIRE(settings.storeWifiCredentials({"my-ssid", "my-password"}));
+        system.init();
+        wifiMan.simulateConnected();
+        system.update();
+        wifiMan.simulateDisconnected();
+
+        timeStub.setStubbedMillis(TIMEOUT_MILLIS);
+        system.update();
+        REQUIRE(stateMachine.getState() == STATE::SHUTTING_DOWN);
+    }
+
+    SECTION("never reboots in onboarding without stored credentials") {
+        system.init();
+        REQUIRE(stateMachine.getState() == STATE::WIFI_ONBOARDING);
+
+        timeStub.setStubbedMillis(TIMEOUT_MILLIS * 3);
+        system.update();
+        REQUIRE(stateMachine.getState() == STATE::WIFI_ONBOARDING);
+    }
+}

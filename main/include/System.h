@@ -5,6 +5,7 @@
 #ifndef IRRIGATION_COMPUTER_SYSTEM_H
 #define IRRIGATION_COMPUTER_SYSTEM_H
 
+#include <atomic>
 #include "GpioPinRegister.h"
 #include "StateMachine.h"
 #include "SettingsManager.h"
@@ -89,6 +90,12 @@ private:
      */
     void pollWifiResetButton() noexcept;
 
+    /**
+     * Requests a shutdown, which main() turns into a reboot, once wifi credentials are stored but the
+     * device was offline (wifi, plus mqtt if configured) for CONNECTIVITY_WATCHDOG_TIMEOUT_MILLIS.
+     */
+    void pollConnectivityWatchdog() noexcept;
+
     // Valves are only ever meant to auto-close after minutes/hours, so polling every ~10ms
     // update() tick is wasted work. checking every ~2s (VALVE_POLL_INTERVAL_TICKS ticks) loses
     // no meaningful precision. The exact timing is not important.
@@ -101,8 +108,12 @@ private:
     bool wifiResetButtonHeld = false;
     int64_t wifiResetButtonPressedSinceMillis = 0;
 
+    static constexpr int64_t CONNECTIVITY_WATCHDOG_TIMEOUT_MILLIS = 30 * 60 * 1000;
+    int64_t lastFullyOnlineAtMillis = 0;
+
     bool isInitialized = false;
-    bool wifiConnectFailed = false;
+    // written by the wifi event task
+    std::atomic<bool> wifiConnectFailed = false;
     StateMachine& stateMachine;
     GpioPinRegister& gpioPinRegister;
     IGpio& gpio;

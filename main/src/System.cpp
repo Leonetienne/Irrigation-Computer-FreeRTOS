@@ -8,6 +8,7 @@
 #ifndef HOST_BUILD
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_task_wdt.h"
 #endif
 
 static const char* LOG_TAG = "System";
@@ -95,16 +96,25 @@ void System::init() noexcept {
         Valve(valvePins[7], valveIndicatorPins[7], gpio, i_time, gpioPinRegister)
     });
 
+    lastFullyOnlineAtMillis = i_time.getMillis();
     isInitialized = true;
 }
 
 void System::loop() noexcept {
+#ifndef HOST_BUILD
+    // hung loop trips the task wdt, which panics and reboots (CONFIG_ESP_TASK_WDT_PANIC)
+    esp_task_wdt_add(nullptr);
+#endif
     while (stateMachine.getState() != STATE::SHUTTING_DOWN) {
         update();
 #ifndef HOST_BUILD
+        esp_task_wdt_reset();
         vTaskDelay(pdMS_TO_TICKS(10));
 #endif
     }
+#ifndef HOST_BUILD
+    esp_task_wdt_delete(nullptr);
+#endif
     beforeShutdown();
 }
 
@@ -150,9 +160,9 @@ void System::update() noexcept {
     }
 
     pollWifiResetButton();
+    pollConnectivityWatchdog();
 
-    if (wifiConnectFailed) {
-        wifiConnectFailed = false;
+    if (wifiConnectFailed.exchange(false)) {
         ESP_LOGW(LOG_TAG, "wifi connect failed, falling back to onboarding ap");
         restartOnboarding();
     }
@@ -187,6 +197,32 @@ void System::pollWifiResetButton() noexcept {
         settings.eraseWifiCredentials();
         restartOnboarding();
     }
+}
+
+void System::pollConnectivityWatchdog() noexcept {
+    const int64_t now = i_time.getMillis();
+    const bool fullyOnline =
+        stateMachine.getState() == STATE::OPERATIONAL &&
+        wifiMan.getState() == WifiConnectionState::Connected &&
+        mqttSync.isHealthy();
+
+    if (fullyOnline) {
+        lastFullyOnlineAtMillis = now;
+        return;
+    }
+
+    if (now - lastFullyOnlineAtMillis < CONNECTIVITY_WATCHDOG_TIMEOUT_MILLIS) {
+        return;
+    }
+
+    // without stored credentials, onboarding is the intended state
+    if (!settings.retrieveWifiCredentials().has_value()) {
+        lastFullyOnlineAtMillis = now;
+        return;
+    }
+
+    ESP_LOGW(LOG_TAG, "offline for %lld ms, rebooting", static_cast<long long>(now - lastFullyOnlineAtMillis));
+    stateMachine.setState(STATE::SHUTTING_DOWN);
 }
 
 void System::onWifiConnected() noexcept {

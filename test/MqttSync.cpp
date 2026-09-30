@@ -234,3 +234,34 @@ TEST_CASE("MqttSync: pollPublishStateChanges", "[MqttSync]") {
         REQUIRE(messages.back().payload == "ON");
     }
 }
+
+TEST_CASE("MqttSync: isHealthy", "[MqttSync]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+    ValveGroup valveGroup(timeStub, settings);
+    REQUIRE(valveGroup.initialize(makeValves(gpioStub, timeStub, pr)));
+    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    MqttSync sync(mqttStub, valveGroup, settings);
+    sync.begin();
+
+    SECTION("is healthy without a configured broker") {
+        sync.connect();
+        REQUIRE(sync.isHealthy());
+    }
+
+    SECTION("with a configured broker, is unhealthy until connected") {
+        REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker:1883", "", ""}));
+        REQUIRE(sync.connect());
+        REQUIRE_FALSE(sync.isHealthy());
+
+        mqttStub.simulateConnected();
+        REQUIRE(sync.isHealthy());
+
+        mqttStub.simulateDisconnected();
+        REQUIRE_FALSE(sync.isHealthy());
+    }
+}
