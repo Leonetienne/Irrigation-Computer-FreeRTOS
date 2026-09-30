@@ -83,6 +83,7 @@ private:
     bool eventHandlersRegistered = false;
     WifiConnectionState state = WifiConnectionState::Disconnected;
     int connectFailureCount = 0;
+    bool hasConnectedOnce = false;
     std::function<void()> onConnected;
     std::function<void()> onDisconnected;
     std::function<void()> onFailed;

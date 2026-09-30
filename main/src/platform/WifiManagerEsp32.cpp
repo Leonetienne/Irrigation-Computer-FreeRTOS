@@ -39,6 +39,7 @@ bool WifiManagerEsp32::beginUserWifi(const WifiCredentials& credentials) noexcep
     }
 
     connectFailureCount = 0;
+    hasConnectedOnce = false;
 
     if (esp_netif_init() != ESP_OK) {
         return false;
@@ -203,6 +204,7 @@ bool WifiManagerEsp32::free() noexcept {
     eventHandlersRegistered = false;
     state = WifiConnectionState::Disconnected;
     connectFailureCount = 0;
+    hasConnectedOnce = false;
     setIndicatorState(PIN_STATE_DIGITAL::LOW);
 
     return success;
@@ -262,15 +264,16 @@ void WifiManagerEsp32::eventHandler(
         self->setIndicatorState(PIN_STATE_DIGITAL::LOW);
         const bool wasConnected = self->state == WifiConnectionState::Connected;
 
-        if (wasConnected) {
-            // was connected before, then dropped out - keep retrying indefinitely
-            self->connectFailureCount = 0;
+        if (self->hasConnectedOnce) {
+            // credentials are known good, so retry forever
             self->state = WifiConnectionState::Connecting;
-            ESP_LOGW(LOG_TAG, "disconnected, retrying");
             esp_wifi_connect();
 
-            if (self->onDisconnected) {
-                self->onDisconnected();
+            if (wasConnected) {
+                ESP_LOGW(LOG_TAG, "disconnected, retrying");
+                if (self->onDisconnected) {
+                    self->onDisconnected();
+                }
             }
             return;
         }
@@ -292,6 +295,7 @@ void WifiManagerEsp32::eventHandler(
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         self->state = WifiConnectionState::Connected;
         self->connectFailureCount = 0;
+        self->hasConnectedOnce = true;
         self->setIndicatorState(PIN_STATE_DIGITAL::HIGH);
         const auto* event = static_cast<ip_event_got_ip_t*>(data);
         ESP_LOGI(LOG_TAG, "connected, got ip: " IPSTR, IP2STR(&event->ip_info.ip));
